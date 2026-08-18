@@ -1,0 +1,179 @@
+{
+  "entities": {
+    "AdminAuth": {
+      "title": "AdminAuth",
+      "description": "Secure administrative passcode for dashboard login",
+      "type": "object",
+      "properties": {
+        "passcode": {
+          "type": "string",
+          "description": "The passcode required to unlock administration"
+        }
+      },
+      "required": ["passcode"]
+    },
+    "GeneralSettings": {
+      "title": "GeneralSettings",
+      "description": "General text, contact info, and media displayed on the website",
+      "type": "object",
+      "properties": {
+        "heroTitle": { "type": "string" },
+        "heroSubtitle": { "type": "string" },
+        "companyEmail": { "type": "string" },
+        "companyPhone": { "type": "string" },
+        "companyAddress": { "type": "string" },
+        "videoUrl": { "type": "string" },
+        "whatsappNumber": { "type": "string" }
+      },
+      "required": ["heroTitle", "heroSubtitle", "companyEmail", "companyPhone", "companyAddress", "videoUrl", "whatsappNumber"]
+    },
+    "Partner": {
+      "title": "Partner",
+      "description": "A client company or partner brand",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "logoText": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "order": { "type": "integer" }
+      },
+      "required": ["id", "name", "logoText", "imageUrl", "order"]
+    },
+    "GalleryItem": {
+      "title": "GalleryItem",
+      "description": "An image item representing production or machinery",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "caption": { "type": "string" },
+        "order": { "type": "integer" }
+      },
+      "required": ["id", "imageUrl", "caption", "order"]
+    },
+    "Testimonial": {
+      "title": "Testimonial",
+      "description": "A review or recommendation from a customer",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "company": { "type": "string" },
+        "text": { "type": "string" },
+        "rating": { "type": "integer" },
+        "date": { "type": "string" },
+        "isApproved": { "type": "boolean" }
+      },
+      "required": ["id", "name", "role", "company", "text", "rating", "date"]
+    },
+    "QuoteRequest": {
+      "title": "QuoteRequest",
+      "description": "A budget request submitted by an online client",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "clientName": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "serviceId": { "type": "string" },
+        "product": { "type": "string" },
+        "quantity": { "type": "integer" },
+        "description": { "type": "string" },
+        "urgency": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["id", "clientName", "email", "phone", "quantity", "description", "urgency", "timestamp"]
+    },
+    "Subscriber": {
+      "title": "Subscriber",
+      "description": "A user subscribed to the newsletter mailing list",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string" },
+        "subscribedAt": { "type": "string" }
+      },
+      "required": ["id", "email", "subscribedAt"]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "System administrator and commercial representative accounts",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "username": { "type": "string" },
+        "name": { "type": "string" },
+        "passcode": { "type": "string" },
+        "role": { "type": "string" },
+        "status": { "type": "string" },
+        "whatsappNumber": { "type": "string" },
+        "isOnline": { "type": "boolean" }
+      },
+      "required": ["id", "username", "name", "passcode", "role", "status"]
+    },
+    "AssistantChatSession": {
+      "title": "AssistantChatSession",
+      "description": "Chat log between a user and Lito the virtual assistant",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "messages": { "type": "array" }
+      },
+      "required": ["id", "createdAt"]
+    },
+    "Analytics": {
+      "title": "Analytics",
+      "description": "Web traffic counters",
+      "type": "object",
+      "properties": {
+        "count": { "type": "integer" }
+      },
+      "required": ["count"]
+    }
+  },
+  "firestore": {
+    "/gpa_config/admin_auth": {
+      "schema": "AdminAuth",
+      "description": "Document holding the master admin passcode"
+    },
+    "/gpa_config/general_settings": {
+      "schema": "GeneralSettings",
+      "description": "Document holding the main landing page texts"
+    },
+    "/gpa_partners/{partnerId}": {
+      "schema": "Partner",
+      "description": "Collection of partner and client brand cards"
+    },
+    "/gpa_gallery/{itemId}": {
+      "schema": "GalleryItem",
+      "description": "Collection of production and manufacturing process images"
+    },
+    "/gpa_testimonials/{testimonialId}": {
+      "schema": "Testimonial",
+      "description": "Collection of customer testimonials"
+    },
+    "/gpa_quotes/{quoteId}": {
+      "schema": "QuoteRequest",
+      "description": "Collection of client-submitted quote inquiries"
+    },
+    "/gpa_subscribers/{subscriberId}": {
+      "schema": "Subscriber",
+      "description": "Collection of mailing list subscribers"
+    },
+    "/gpa_admin_users/{userId}": {
+      "schema": "AdminUser",
+      "description": "Collection of administrators and commercial agents"
+    },
+    "/gpa_assistant_chats/{chatId}": {
+      "schema": "AssistantChatSession",
+      "description": "Collection of assistant interactive logs"
+    },
+    "/gpa_analytics/{analyticsDocId}": {
+      "schema": "Analytics",
+      "description": "Collection of real-time traffic statistics"
+    }
+  }
+}

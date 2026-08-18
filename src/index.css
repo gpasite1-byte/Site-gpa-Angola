@@ -1,0 +1,263 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Manrope:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Montserrat:wght@400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Manrope", "Inter", sans-serif;
+  --font-display: "Sora", "Montserrat", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-brand-purple: #120d2d;
+  --color-brand-purple-light: #f2f2fb;
+  --color-brand-purple-dark: #0b071c;
+  --color-brand-orange: #f59e0b;
+  --color-brand-orange-hover: #d97706;
+  --color-brand-gold: #f6d365;
+  --color-sleek-blue: #3b82f6;
+  --color-sleek-emerald: #10b981;
+  --color-whatsapp-official: #25d366;
+  --color-whatsapp-dark: #128c7e;
+}
+
+:root {
+  color-scheme: light;
+  --bg-base: #f7f7fb;
+  --bg-soft: #eef2ff;
+  --bg-panel: rgba(255, 255, 255, 0.76);
+  --text-strong: #110d22;
+  --text-soft: #4f5167;
+  --line-soft: rgba(18, 13, 45, 0.09);
+  --shadow-soft: 0 24px 60px rgba(17, 13, 34, 0.12);
+  --glow-gold: rgba(245, 158, 11, 0.28);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: "Manrope", "Inter", sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(167, 139, 250, 0.12), transparent 25%),
+    radial-gradient(circle at bottom right, rgba(245, 158, 11, 0.14), transparent 28%),
+    linear-gradient(135deg, #f8f9ff 0%, #f3f5fb 35%, #f7f5f2 100%);
+  color: var(--text-strong);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: linear-gradient(rgba(255,255,255,0.35) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.25) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: radial-gradient(circle at center, black 50%, transparent 100%);
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(148, 163, 184, 0.08);
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.9), rgba(79, 70, 229, 0.7));
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(217, 119, 6, 1), rgba(67, 56, 202, 0.8));
+}
+
+.bg-hexagon-pattern {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(18, 13, 45, 0.08), transparent 18%),
+    radial-gradient(circle at 80% 0%, rgba(245, 158, 11, 0.12), transparent 26%),
+    radial-gradient(circle at 60% 80%, rgba(79, 70, 229, 0.08), transparent 25%),
+    linear-gradient(135deg, #f6f7fb 0%, #f9f5f0 100%);
+  background-attachment: fixed;
+}
+
+.premium-card {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(17, 13, 34, 0.08);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(18px);
+}
+
+.premium-glow {
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.2), 0 20px 45px rgba(245, 158, 11, 0.16);
+}
+
+.page-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.72;
+  filter: saturate(1.1) contrast(1.05);
+  transform: scale(1.12);
+  animation: slow-pan 18s ease-in-out infinite alternate;
+}
+
+.hero-orb {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(80px);
+  opacity: 0.8;
+  pointer-events: none;
+  animation: drift 12s ease-in-out infinite alternate;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes drift {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  100% { transform: translate3d(18px, -22px, 0) scale(1.08); }
+}
+
+@keyframes slow-pan {
+  0% { transform: scale(1.12) translate3d(0, 0, 0); }
+  100% { transform: scale(1.22) translate3d(-2%, 2%, 0); }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes revealUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 4s ease-in-out infinite;
+}
+
+.reveal-up {
+  animation: revealUp 0.75s ease-out both;
+}
+
+.shimmer::after {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.45), transparent 70%);
+  transform: translateX(-100%);
+  animation: shimmer 4s linear infinite;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 32s linear infinite;
+}
+
+.pause-hover:hover {
+  animation-play-state: paused;
+}
+
+/* Logo Animations */
+@keyframes logo-glow-pulse {
+  0%, 100% {
+    opacity: 0.3;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.4), 0 0 40px rgba(245, 158, 11, 0.2);
+  }
+  50% {
+    opacity: 0.7;
+    box-shadow: 0 0 40px rgba(245, 158, 11, 0.6), 0 0 80px rgba(245, 158, 11, 0.3), 0 0 100px rgba(245, 158, 11, 0.15);
+  }
+}
+
+@keyframes logo-float {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-8px) scale(1.02);
+  }
+}
+
+@keyframes logo-ring-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes logo-shine {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.logo-glow {
+  animation: logo-glow-pulse 3s ease-in-out infinite;
+}
+
+.logo-float {
+  animation: logo-float 3s ease-in-out infinite;
+}
+
+.logo-shine {
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+  background-size: 1000px 100%;
+  animation: logo-shine 3s ease-in-out infinite;
+}
+
+@keyframes scanline {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(550px); }
+}
+
+.animate-scanline {
+  animation: scanline 6s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+

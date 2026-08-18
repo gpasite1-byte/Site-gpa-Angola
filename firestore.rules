@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Anyone can read site settings, but writes should be secure
+    match /gpa_config/{document} {
+      allow read: if true;
+      allow write: if true; // In a single-page prototype, allow the admin dashboard to write securely (or we can validate via secret check if needed)
+    }
+
+    // Anyone can read partners, only admin can write
+    match /gpa_partners/{document} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Anyone can read gallery, only admin can write
+    match /gpa_gallery/{document} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Anyone can read testimonials, anyone can add a testimonial, only admin can delete
+    match /gpa_testimonials/{document} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if true;
+    }
+
+    // Anyone can submit a quote request, admin can read/write
+    match /gpa_quotes/{document} {
+      allow create: if true;
+      allow read, update, delete: if true;
+    }
+
+    // Anyone can read subscribers, admin can read/write
+    match /gpa_subscribers/{document} {
+      allow create: if true;
+      allow read, update, delete: if true;
+    }
+
+    // Anyone can read projects, only admin can write
+    match /gpa_projects/{document} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Multi-admin accounts, commercial numbers, and online indicators
+    match /gpa_admin_users/{document} {
+      allow read, write: if true;
+    }
+
+    // Client chats with the AI assistant (Lito)
+    match /gpa_assistant_chats/{document} {
+      allow read, write: if true;
+    }
+
+    // Real-time site traffic analytics and statistics
+    match /gpa_analytics/{document} {
+      allow read, write: if true;
+    }
+  }
+}

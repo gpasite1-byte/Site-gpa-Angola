@@ -1,0 +1,6 @@
+{
+  "name": "GPA Angola",
+  "description": "Website moderno e animado da GPA Angola, especialista em soluções gráficas, personalização têxtil, design e marketing digital.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
