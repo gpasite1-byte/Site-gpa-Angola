@@ -1,7 +1,7 @@
 import { Service, Project, Testimonial, StoreProduct } from './types';
+import heroShowcaseImage from './assets/images/hero_showcase_1782469342727.jpg';
 
-// Export the hero image path so we can import it in App.tsx / Hero.tsx
-export const HERO_IMAGE_PATH = '/src/assets/images/hero_showcase_1782469342727.jpg';
+export const HERO_IMAGE_PATH = heroShowcaseImage;
 
 export const SERVICES: Service[] = [
   {

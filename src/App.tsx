@@ -420,7 +420,7 @@ export default function App() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(245,158,11,0.18),transparent_18%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.16),transparent_24%)]" />
       </div>
 
-      <div className="fixed inset-0 pointer-events-none z-0 bg-no-repeat bg-center" style={{ backgroundImage: `url(${liveConfig?.bgImageUrl || "https://i.ibb.co/v6FWV57q/LOGO-GPA.png"})`, backgroundSize: 'min(450px, 75%)', backgroundPosition: 'center 35%', opacity: liveConfig?.bgOpacity !== undefined ? liveConfig.bgOpacity : 0.012 }}></div>
+      <div className="fixed inset-0 pointer-events-none z-0 bg-no-repeat bg-center" style={{ backgroundImage: `url(${liveConfig?.bgImageUrl || "https://i.ibb.co/v6FWV57q/LOGO-GPA.png"})`, backgroundSize: 'min(450px, 75%)', backgroundPosition: 'center 35%', opacity: liveConfig?.bgOpacity && liveConfig.bgOpacity > 0.02 ? liveConfig.bgOpacity : 0.08 }}></div>
 
       <div className="relative z-10 flex flex-col min-h-screen">
         <div className="absolute top-[-100px] left-[-100px] w-96 h-96 bg-indigo-600/5 rounded-full blur-[120px] pointer-events-none"></div>
