@@ -302,36 +302,45 @@ const DEFAULT_CONFIG: SiteConfig = {
 
 export async function getSiteConfig(): Promise<SiteConfig> {
   const configRef = doc(db, CONFIG_COLLECTION, 'general_settings');
-  const fetchPromise = (async () => {
-    const snap = await getDoc(configRef);
-    if (snap.exists()) {
-      const incoming = snap.data();
-      const mergedPrices = { ...DEFAULT_CONFIG.productPrices, ...(incoming.productPrices || {}) };
-      const mergedMinQtys = { ...DEFAULT_CONFIG.productMinQtys, ...(incoming.productMinQtys || {}) };
-      const data = { 
-        ...DEFAULT_CONFIG, 
-        ...incoming, 
-        productPrices: mergedPrices, 
-        productMinQtys: mergedMinQtys 
-      } as SiteConfig;
-      localStorage.setItem('gpa_cached_site_config', JSON.stringify(data));
-      return data;
-    } else {
-      await setDoc(configRef, DEFAULT_CONFIG);
-      localStorage.setItem('gpa_cached_site_config', JSON.stringify(DEFAULT_CONFIG));
-      return DEFAULT_CONFIG;
-    }
-  })();
-
   const cached = localStorage.getItem('gpa_cached_site_config');
   const fallback = cached ? JSON.parse(cached) : DEFAULT_CONFIG;
 
-  return withTimeout(fetchPromise, 20000, fallback);
+  const fetchPromise = (async () => {
+    try {
+      const snap = await getDoc(configRef);
+      if (snap.exists()) {
+        const incoming = snap.data();
+        const mergedPrices = { ...DEFAULT_CONFIG.productPrices, ...(incoming.productPrices || {}) };
+        const mergedMinQtys = { ...DEFAULT_CONFIG.productMinQtys, ...(incoming.productMinQtys || {}) };
+        const data = { 
+          ...DEFAULT_CONFIG, 
+          ...incoming, 
+          productPrices: mergedPrices, 
+          productMinQtys: mergedMinQtys 
+        } as SiteConfig;
+        try { localStorage.setItem('gpa_cached_site_config', JSON.stringify(data)); } catch (e) {}
+        return data;
+      } else {
+        try { await setDoc(configRef, DEFAULT_CONFIG); } catch (e) {}
+        try { localStorage.setItem('gpa_cached_site_config', JSON.stringify(DEFAULT_CONFIG)); } catch (e) {}
+        return DEFAULT_CONFIG;
+      }
+    } catch (err) {
+      console.warn('Firestore getSiteConfig error, using fallback:', err);
+      return fallback;
+    }
+  })();
+
+  return withTimeout(fetchPromise, 4000, fallback);
 }
 
 export async function updateSiteConfig(newConfig: Partial<SiteConfig>): Promise<void> {
   const configRef = doc(db, CONFIG_COLLECTION, 'general_settings');
-  await setDoc(configRef, newConfig, { merge: true });
+  try {
+    await setDoc(configRef, newConfig, { merge: true });
+  } catch (err) {
+    console.warn('Firestore updateSiteConfig error:', err);
+  }
 
   try {
     const cached = localStorage.getItem('gpa_cached_site_config');
@@ -364,37 +373,42 @@ export async function getPartners(): Promise<Partner[]> {
     { id: '6', name: 'Nestlé', logoText: 'Nestlé', imageUrl: 'https://i.ibb.co/4w3FGfSG/NESTLE.jpg', order: 6 }
   ];
 
-  const fetchPromise = (async () => {
-    const snap = await getDocs(collection(db, PARTNERS_COLLECTION));
-    if (snap.empty) {
-      try {
-        for (const p of defaultPartners) {
-          await setDoc(doc(db, PARTNERS_COLLECTION, p.id), p);
-        }
-      } catch (e) {
-        console.warn('Could not seed partners:', e);
-      }
-      localStorage.setItem('gpa_cached_partners', JSON.stringify(defaultPartners));
-      return defaultPartners;
-    }
-    const list: Partner[] = [];
-    snap.forEach((d) => {
-      const data = d.data();
-      list.push({ id: d.id, ...data } as Partner);
-    });
-    const sorted = list.sort((a, b) => (a.order || 0) - (b.order || 0));
-    localStorage.setItem('gpa_cached_partners', JSON.stringify(sorted));
-    return sorted;
-  })();
-
   const cached = localStorage.getItem('gpa_cached_partners');
   const fallback = cached ? JSON.parse(cached) : defaultPartners;
 
-  return withTimeout(fetchPromise, 20000, fallback);
+  const fetchPromise = (async () => {
+    try {
+      const snap = await getDocs(collection(db, PARTNERS_COLLECTION));
+      if (snap.empty) {
+        try {
+          for (const p of defaultPartners) {
+            await setDoc(doc(db, PARTNERS_COLLECTION, p.id), p);
+          }
+        } catch (e) {}
+        try { localStorage.setItem('gpa_cached_partners', JSON.stringify(defaultPartners)); } catch (e) {}
+        return defaultPartners;
+      }
+      const list: Partner[] = [];
+      snap.forEach((d) => {
+        const data = d.data();
+        list.push({ id: d.id, ...data } as Partner);
+      });
+      const sorted = list.sort((a, b) => (a.order || 0) - (b.order || 0));
+      try { localStorage.setItem('gpa_cached_partners', JSON.stringify(sorted)); } catch (e) {}
+      return sorted;
+    } catch (err) {
+      console.warn('Firestore getPartners error:', err);
+      return fallback;
+    }
+  })();
+
+  return withTimeout(fetchPromise, 4000, fallback);
 }
 
 export async function savePartner(partner: Partner): Promise<void> {
-  await setDoc(doc(db, PARTNERS_COLLECTION, partner.id), partner, { merge: true });
+  try {
+    await setDoc(doc(db, PARTNERS_COLLECTION, partner.id), partner, { merge: true });
+  } catch (e) {}
 
   try {
     const cached = localStorage.getItem('gpa_cached_partners');
@@ -407,13 +421,13 @@ export async function savePartner(partner: Partner): Promise<void> {
     }
     list.sort((a, b) => (a.order || 0) - (b.order || 0));
     localStorage.setItem('gpa_cached_partners', JSON.stringify(list));
-  } catch (e) {
-    console.warn('Could not update cached partners:', e);
-  }
+  } catch (e) {}
 }
 
 export async function deletePartner(id: string): Promise<void> {
-  await deleteDoc(doc(db, PARTNERS_COLLECTION, id));
+  try {
+    await deleteDoc(doc(db, PARTNERS_COLLECTION, id));
+  } catch (e) {}
 
   try {
     const cached = localStorage.getItem('gpa_cached_partners');
@@ -422,9 +436,7 @@ export async function deletePartner(id: string): Promise<void> {
       list = list.filter(p => p.id !== id);
       localStorage.setItem('gpa_cached_partners', JSON.stringify(list));
     }
-  } catch (e) {
-    console.warn('Could not update cached partners:', e);
-  }
+  } catch (e) {}
 }
 
 /**
@@ -447,37 +459,42 @@ export async function getGalleryItems(): Promise<GalleryItem[]> {
     { id: '5', imageUrl: "https://i.ibb.co/twCRR6XK/536279917-1234695478674112-5049397024375765850-n.jpg", caption: "Personalização têxtil e corte de precisão computadorizado", order: 5 }
   ];
 
-  const fetchPromise = (async () => {
-    const snap = await getDocs(collection(db, GALLERY_COLLECTION));
-    if (snap.empty) {
-      try {
-        for (const item of defaultGallery) {
-          await setDoc(doc(db, GALLERY_COLLECTION, item.id), item);
-        }
-      } catch (e) {
-        console.warn('Could not seed gallery items:', e);
-      }
-      localStorage.setItem('gpa_cached_gallery', JSON.stringify(defaultGallery));
-      return defaultGallery;
-    }
-    const list: GalleryItem[] = [];
-    snap.forEach((d) => {
-      const data = d.data();
-      list.push({ id: d.id, ...data } as GalleryItem);
-    });
-    const sorted = list.sort((a, b) => (a.order || 0) - (b.order || 0));
-    localStorage.setItem('gpa_cached_gallery', JSON.stringify(sorted));
-    return sorted;
-  })();
-
   const cached = localStorage.getItem('gpa_cached_gallery');
   const fallback = cached ? JSON.parse(cached) : defaultGallery;
 
-  return withTimeout(fetchPromise, 20000, fallback);
+  const fetchPromise = (async () => {
+    try {
+      const snap = await getDocs(collection(db, GALLERY_COLLECTION));
+      if (snap.empty) {
+        try {
+          for (const item of defaultGallery) {
+            await setDoc(doc(db, GALLERY_COLLECTION, item.id), item);
+          }
+        } catch (e) {}
+        try { localStorage.setItem('gpa_cached_gallery', JSON.stringify(defaultGallery)); } catch (e) {}
+        return defaultGallery;
+      }
+      const list: GalleryItem[] = [];
+      snap.forEach((d) => {
+        const data = d.data();
+        list.push({ id: d.id, ...data } as GalleryItem);
+      });
+      const sorted = list.sort((a, b) => (a.order || 0) - (b.order || 0));
+      try { localStorage.setItem('gpa_cached_gallery', JSON.stringify(sorted)); } catch (e) {}
+      return sorted;
+    } catch (err) {
+      console.warn('Firestore getGalleryItems error:', err);
+      return fallback;
+    }
+  })();
+
+  return withTimeout(fetchPromise, 4000, fallback);
 }
 
 export async function saveGalleryItem(item: GalleryItem): Promise<void> {
-  await setDoc(doc(db, GALLERY_COLLECTION, item.id), item, { merge: true });
+  try {
+    await setDoc(doc(db, GALLERY_COLLECTION, item.id), item, { merge: true });
+  } catch (e) {}
 
   try {
     const cached = localStorage.getItem('gpa_cached_gallery');
@@ -490,13 +507,13 @@ export async function saveGalleryItem(item: GalleryItem): Promise<void> {
     }
     list.sort((a, b) => (a.order || 0) - (b.order || 0));
     localStorage.setItem('gpa_cached_gallery', JSON.stringify(list));
-  } catch (e) {
-    console.warn('Could not update cached gallery:', e);
-  }
+  } catch (e) {}
 }
 
 export async function deleteGalleryItem(id: string): Promise<void> {
-  await deleteDoc(doc(db, GALLERY_COLLECTION, id));
+  try {
+    await deleteDoc(doc(db, GALLERY_COLLECTION, id));
+  } catch (e) {}
 
   try {
     const cached = localStorage.getItem('gpa_cached_gallery');
@@ -505,9 +522,7 @@ export async function deleteGalleryItem(id: string): Promise<void> {
       list = list.filter(g => g.id !== id);
       localStorage.setItem('gpa_cached_gallery', JSON.stringify(list));
     }
-  } catch (e) {
-    console.warn('Could not update cached gallery:', e);
-  }
+  } catch (e) {}
 }
 
 /**
@@ -515,23 +530,32 @@ export async function deleteGalleryItem(id: string): Promise<void> {
  */
 export async function getFirebaseTestimonials(): Promise<Testimonial[]> {
   const fetchPromise = (async () => {
-    const snap = await getDocs(collection(db, TESTIMONIALS_COLLECTION));
-    const list: Testimonial[] = [];
-    snap.forEach((d) => {
-      list.push({ id: d.id, ...d.data() } as Testimonial);
-    });
-    return list;
+    try {
+      const snap = await getDocs(collection(db, TESTIMONIALS_COLLECTION));
+      const list: Testimonial[] = [];
+      snap.forEach((d) => {
+        list.push({ id: d.id, ...d.data() } as Testimonial);
+      });
+      return list;
+    } catch (err) {
+      console.warn('Firestore getFirebaseTestimonials error:', err);
+      return [];
+    }
   })();
 
-  return withTimeout(fetchPromise, 20000, []);
+  return withTimeout(fetchPromise, 4000, []);
 }
 
 export async function saveFirebaseTestimonial(t: Testimonial): Promise<void> {
-  await setDoc(doc(db, TESTIMONIALS_COLLECTION, t.id), t, { merge: true });
+  try {
+    await setDoc(doc(db, TESTIMONIALS_COLLECTION, t.id), t, { merge: true });
+  } catch (e) {}
 }
 
 export async function deleteFirebaseTestimonial(id: string): Promise<void> {
-  await deleteDoc(doc(db, TESTIMONIALS_COLLECTION, id));
+  try {
+    await deleteDoc(doc(db, TESTIMONIALS_COLLECTION, id));
+  } catch (e) {}
 }
 
 /**
@@ -539,23 +563,32 @@ export async function deleteFirebaseTestimonial(id: string): Promise<void> {
  */
 export async function getFirebaseQuotes(): Promise<QuoteRequest[]> {
   const fetchPromise = (async () => {
-    const snap = await getDocs(collection(db, QUOTES_COLLECTION));
-    const list: QuoteRequest[] = [];
-    snap.forEach((d) => {
-      list.push({ id: d.id, ...d.data() } as QuoteRequest);
-    });
-    return list.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+    try {
+      const snap = await getDocs(collection(db, QUOTES_COLLECTION));
+      const list: QuoteRequest[] = [];
+      snap.forEach((d) => {
+        list.push({ id: d.id, ...d.data() } as QuoteRequest);
+      });
+      return list.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+    } catch (err) {
+      console.warn('Firestore getFirebaseQuotes error:', err);
+      return [];
+    }
   })();
 
-  return withTimeout(fetchPromise, 20000, []);
+  return withTimeout(fetchPromise, 4000, []);
 }
 
 export async function saveFirebaseQuote(q: QuoteRequest): Promise<void> {
-  await setDoc(doc(db, QUOTES_COLLECTION, q.id), q);
+  try {
+    await setDoc(doc(db, QUOTES_COLLECTION, q.id), q);
+  } catch (e) {}
 }
 
 export async function deleteFirebaseQuote(id: string): Promise<void> {
-  await deleteDoc(doc(db, QUOTES_COLLECTION, id));
+  try {
+    await deleteDoc(doc(db, QUOTES_COLLECTION, id));
+  } catch (e) {}
 }
 
 /**
@@ -569,56 +602,66 @@ export interface Subscriber {
 
 export async function getFirebaseSubscribers(): Promise<Subscriber[]> {
   const fetchPromise = (async () => {
-    const snap = await getDocs(collection(db, SUBSCRIBERS_COLLECTION));
-    const list: Subscriber[] = [];
-    snap.forEach((d) => {
-      list.push({ id: d.id, ...d.data() } as Subscriber);
-    });
-    return list;
+    try {
+      const snap = await getDocs(collection(db, SUBSCRIBERS_COLLECTION));
+      const list: Subscriber[] = [];
+      snap.forEach((d) => {
+        list.push({ id: d.id, ...d.data() } as Subscriber);
+      });
+      return list;
+    } catch (err) {
+      console.warn('Firestore getFirebaseSubscribers error:', err);
+      return [];
+    }
   })();
 
-  return withTimeout(fetchPromise, 20000, []);
+  return withTimeout(fetchPromise, 4000, []);
 }
 
 export async function addFirebaseSubscriber(email: string): Promise<void> {
   const id = Date.now().toString();
-  await setDoc(doc(db, SUBSCRIBERS_COLLECTION, id), {
-    id,
-    email,
-    subscribedAt: new Date().toISOString()
-  });
+  try {
+    await setDoc(doc(db, SUBSCRIBERS_COLLECTION, id), {
+      id,
+      email,
+      subscribedAt: new Date().toISOString()
+    });
+  } catch (e) {}
 }
 
 /**
  * --- PORTFOLIO / PROJECTS ---
  */
 export async function getFirebaseProjects(): Promise<Project[]> {
-  const fetchPromise = (async () => {
-    const snap = await getDocs(collection(db, PROJECTS_COLLECTION));
-    if (snap.empty) {
-      try {
-        for (const p of PROJECTS) {
-          await setDoc(doc(db, PROJECTS_COLLECTION, p.id), p);
-        }
-      } catch (e) {
-        console.warn('Could not seed projects:', e);
-      }
-      localStorage.setItem('gpa_cached_projects', JSON.stringify(PROJECTS));
-      return PROJECTS;
-    }
-    const list: Project[] = [];
-    snap.forEach((d) => {
-      const data = d.data();
-      list.push({ id: d.id, ...data } as Project);
-    });
-    localStorage.setItem('gpa_cached_projects', JSON.stringify(list));
-    return list;
-  })();
-
   const cached = localStorage.getItem('gpa_cached_projects');
   const fallback = cached ? JSON.parse(cached) : PROJECTS;
 
-  return withTimeout(fetchPromise, 20000, fallback);
+  const fetchPromise = (async () => {
+    try {
+      const snap = await getDocs(collection(db, PROJECTS_COLLECTION));
+      if (snap.empty) {
+        try {
+          for (const p of PROJECTS) {
+            await setDoc(doc(db, PROJECTS_COLLECTION, p.id), p);
+          }
+        } catch (e) {}
+        try { localStorage.setItem('gpa_cached_projects', JSON.stringify(PROJECTS)); } catch (e) {}
+        return PROJECTS;
+      }
+      const list: Project[] = [];
+      snap.forEach((d) => {
+        const data = d.data();
+        list.push({ id: d.id, ...data } as Project);
+      });
+      try { localStorage.setItem('gpa_cached_projects', JSON.stringify(list)); } catch (e) {}
+      return list;
+    } catch (err) {
+      console.warn('Firestore getFirebaseProjects error:', err);
+      return fallback;
+    }
+  })();
+
+  return withTimeout(fetchPromise, 4000, fallback);
 }
 
 export async function saveFirebaseProject(proj: Project): Promise<void> {
@@ -1222,31 +1265,39 @@ export const DEFAULT_ADMIN_USERS: AdminUser[] = [
 ];
 
 export async function getAdminUsers(): Promise<AdminUser[]> {
-  const fetchPromise = (async () => {
-    const colRef = collection(db, ADMIN_USERS_COLLECTION);
-    const snap = await getDocs(colRef);
-    const list: AdminUser[] = [];
-    snap.forEach((d) => {
-      list.push({ id: d.id, ...d.data() } as AdminUser);
-    });
-    if (list.length === 0) {
-      try {
-        await setDoc(doc(db, ADMIN_USERS_COLLECTION, DEFAULT_ADMIN_USERS[0].id), DEFAULT_ADMIN_USERS[0]);
-      } catch (e) {
-        console.warn('Could not auto-create admin user in Firestore:', e);
-      }
-      return DEFAULT_ADMIN_USERS;
-    }
-    return list;
-  })();
-
   const cached = localStorage.getItem('gpa_cached_admin_users');
   const fallback = cached ? JSON.parse(cached) : DEFAULT_ADMIN_USERS;
-  const result = await withTimeout(fetchPromise, 15000, fallback);
+
+  const fetchPromise = (async () => {
+    try {
+      const colRef = collection(db, ADMIN_USERS_COLLECTION);
+      const snap = await getDocs(colRef);
+      const list: AdminUser[] = [];
+      snap.forEach((d) => {
+        list.push({ id: d.id, ...d.data() } as AdminUser);
+      });
+      if (list.length === 0) {
+        try {
+          await setDoc(doc(db, ADMIN_USERS_COLLECTION, DEFAULT_ADMIN_USERS[0].id), DEFAULT_ADMIN_USERS[0]);
+        } catch (e) {
+          console.warn('Could not auto-create admin user in Firestore:', e);
+        }
+        return DEFAULT_ADMIN_USERS;
+      }
+      return list;
+    } catch (err) {
+      console.warn('Firestore getAdminUsers permission/network error, using fallback:', err);
+      return fallback;
+    }
+  })();
+
+  const result = await withTimeout(fetchPromise, 5000, fallback);
   if (result && result.length > 0) {
-    localStorage.setItem('gpa_cached_admin_users', JSON.stringify(result));
+    try {
+      localStorage.setItem('gpa_cached_admin_users', JSON.stringify(result));
+    } catch (e) {}
   }
-  return result;
+  return result || fallback;
 }
 
 export async function saveAdminUser(user: AdminUser): Promise<AdminUser> {
@@ -1260,15 +1311,17 @@ export async function saveAdminUser(user: AdminUser): Promise<AdminUser> {
     console.warn('Firestore saveAdminUser falhou/offline:', err);
   }
 
-  const cached = localStorage.getItem('gpa_cached_admin_users');
-  const list: AdminUser[] = cached ? JSON.parse(cached) : [...DEFAULT_ADMIN_USERS];
-  const idx = list.findIndex(u => u.id === id);
-  if (idx >= 0) {
-    list[idx] = userToSave;
-  } else {
-    list.push(userToSave);
-  }
-  localStorage.setItem('gpa_cached_admin_users', JSON.stringify(list));
+  try {
+    const cached = localStorage.getItem('gpa_cached_admin_users');
+    const list: AdminUser[] = cached ? JSON.parse(cached) : [...DEFAULT_ADMIN_USERS];
+    const idx = list.findIndex(u => u.id === id);
+    if (idx >= 0) {
+      list[idx] = userToSave;
+    } else {
+      list.push(userToSave);
+    }
+    localStorage.setItem('gpa_cached_admin_users', JSON.stringify(list));
+  } catch (e) {}
   return userToSave;
 }
 
@@ -1280,25 +1333,31 @@ export async function deleteAdminUser(id: string): Promise<void> {
     console.warn('Firestore deleteAdminUser falhou/offline:', err);
   }
 
-  const cached = localStorage.getItem('gpa_cached_admin_users');
-  if (cached) {
-    const list: AdminUser[] = JSON.parse(cached);
-    const updated = list.filter(u => u.id !== id);
-    localStorage.setItem('gpa_cached_admin_users', JSON.stringify(updated));
-  }
+  try {
+    const cached = localStorage.getItem('gpa_cached_admin_users');
+    if (cached) {
+      const list: AdminUser[] = JSON.parse(cached);
+      const updated = list.filter(u => u.id !== id);
+      localStorage.setItem('gpa_cached_admin_users', JSON.stringify(updated));
+    }
+  } catch (e) {}
 }
 
 export async function verifyAdminUserLogin(username: string, passcode: string): Promise<AdminUser | null> {
-  const users = await getAdminUsers();
-  const found = users.find(
-    u => u.active !== false &&
-    u.username.trim().toLowerCase() === username.trim().toLowerCase() &&
-    u.passcode.trim() === passcode.trim()
-  );
-  if (found) {
-    const updated = { ...found, lastLogin: new Date().toISOString() };
-    saveAdminUser(updated);
-    return updated;
+  try {
+    const users = await getAdminUsers();
+    const found = users.find(
+      u => u.active !== false &&
+      u.username.trim().toLowerCase() === username.trim().toLowerCase() &&
+      u.passcode.trim() === passcode.trim()
+    );
+    if (found) {
+      const updated = { ...found, lastLogin: new Date().toISOString() };
+      saveAdminUser(updated).catch(() => {});
+      return updated;
+    }
+  } catch (e) {
+    console.warn('verifyAdminUserLogin error:', e);
   }
   if (username.trim().toLowerCase() === 'admin' && passcode.trim() === 'gpa2026') {
     return DEFAULT_ADMIN_USERS[0];
@@ -1310,26 +1369,34 @@ export async function verifyAdminUserLogin(username: string, passcode: string): 
  * --- STORE CATEGORIES ---
  */
 export async function getStoreCategories(): Promise<StoreCategory[]> {
-  const fetchPromise = (async () => {
-    const colRef = collection(db, STORE_CATEGORIES_COLLECTION);
-    const snap = await getDocs(colRef);
-    const list: StoreCategory[] = [];
-    snap.forEach((d) => {
-      list.push({ id: d.id, ...d.data() } as StoreCategory);
-    });
-    if (list.length === 0) {
-      return DEFAULT_STORE_CATEGORIES;
-    }
-    return list;
-  })();
-
   const cached = localStorage.getItem('gpa_cached_store_categories');
   const fallback = cached ? JSON.parse(cached) : DEFAULT_STORE_CATEGORIES;
-  const result = await withTimeout(fetchPromise, 15000, fallback);
+
+  const fetchPromise = (async () => {
+    try {
+      const colRef = collection(db, STORE_CATEGORIES_COLLECTION);
+      const snap = await getDocs(colRef);
+      const list: StoreCategory[] = [];
+      snap.forEach((d) => {
+        list.push({ id: d.id, ...d.data() } as StoreCategory);
+      });
+      if (list.length === 0) {
+        return DEFAULT_STORE_CATEGORIES;
+      }
+      return list;
+    } catch (err) {
+      console.warn('Firestore getStoreCategories permission/network error, using fallback:', err);
+      return fallback;
+    }
+  })();
+
+  const result = await withTimeout(fetchPromise, 5000, fallback);
   if (result && result.length > 0) {
-    localStorage.setItem('gpa_cached_store_categories', JSON.stringify(result));
+    try {
+      localStorage.setItem('gpa_cached_store_categories', JSON.stringify(result));
+    } catch (e) {}
   }
-  return result;
+  return result || fallback;
 }
 
 export async function saveStoreCategory(category: StoreCategory): Promise<StoreCategory> {
@@ -1343,15 +1410,17 @@ export async function saveStoreCategory(category: StoreCategory): Promise<StoreC
     console.warn('Firestore saveStoreCategory falhou/offline:', err);
   }
 
-  const cached = localStorage.getItem('gpa_cached_store_categories');
-  const list: StoreCategory[] = cached ? JSON.parse(cached) : [...DEFAULT_STORE_CATEGORIES];
-  const idx = list.findIndex(c => c.id === id);
-  if (idx >= 0) {
-    list[idx] = catToSave;
-  } else {
-    list.push(catToSave);
-  }
-  localStorage.setItem('gpa_cached_store_categories', JSON.stringify(list));
+  try {
+    const cached = localStorage.getItem('gpa_cached_store_categories');
+    const list: StoreCategory[] = cached ? JSON.parse(cached) : [...DEFAULT_STORE_CATEGORIES];
+    const idx = list.findIndex(c => c.id === id);
+    if (idx >= 0) {
+      list[idx] = catToSave;
+    } else {
+      list.push(catToSave);
+    }
+    localStorage.setItem('gpa_cached_store_categories', JSON.stringify(list));
+  } catch (e) {}
   return catToSave;
 }
 
@@ -1363,12 +1432,14 @@ export async function deleteStoreCategory(id: string): Promise<void> {
     console.warn('Firestore deleteStoreCategory falhou/offline:', err);
   }
 
-  const cached = localStorage.getItem('gpa_cached_store_categories');
-  if (cached) {
-    const list: StoreCategory[] = JSON.parse(cached);
-    const updated = list.filter(c => c.id !== id);
-    localStorage.setItem('gpa_cached_store_categories', JSON.stringify(updated));
-  }
+  try {
+    const cached = localStorage.getItem('gpa_cached_store_categories');
+    if (cached) {
+      const list: StoreCategory[] = JSON.parse(cached);
+      const updated = list.filter(c => c.id !== id);
+      localStorage.setItem('gpa_cached_store_categories', JSON.stringify(updated));
+    }
+  } catch (e) {}
 }
 
 export function subscribeStoreCategories(callback: (categories: StoreCategory[]) => void): () => void {
@@ -1379,7 +1450,7 @@ export function subscribeStoreCategories(callback: (categories: StoreCategory[])
       list.push({ id: d.id, ...d.data() } as StoreCategory);
     });
     if (list.length > 0) {
-      localStorage.setItem('gpa_cached_store_categories', JSON.stringify(list));
+      try { localStorage.setItem('gpa_cached_store_categories', JSON.stringify(list)); } catch (e) {}
       callback(list);
     } else {
       const cached = localStorage.getItem('gpa_cached_store_categories');
@@ -1387,7 +1458,7 @@ export function subscribeStoreCategories(callback: (categories: StoreCategory[])
       callback(fallback);
     }
   }, (err) => {
-    console.error('Real-time store categories sync error:', err);
+    console.warn('Real-time store categories sync error:', err);
     const cached = localStorage.getItem('gpa_cached_store_categories');
     const fallback = cached ? JSON.parse(cached) : DEFAULT_STORE_CATEGORIES;
     callback(fallback);
@@ -1398,26 +1469,34 @@ export function subscribeStoreCategories(callback: (categories: StoreCategory[])
  * --- SERVICES ---
  */
 export async function getServicesData(): Promise<Service[]> {
-  const fetchPromise = (async () => {
-    const colRef = collection(db, SERVICES_COLLECTION);
-    const snap = await getDocs(colRef);
-    const list: Service[] = [];
-    snap.forEach((d) => {
-      list.push({ id: d.id, ...d.data() } as Service);
-    });
-    if (list.length === 0) {
-      return SERVICES;
-    }
-    return list;
-  })();
-
   const cached = localStorage.getItem('gpa_cached_services');
   const fallback = cached ? JSON.parse(cached) : SERVICES;
-  const result = await withTimeout(fetchPromise, 15000, fallback);
+
+  const fetchPromise = (async () => {
+    try {
+      const colRef = collection(db, SERVICES_COLLECTION);
+      const snap = await getDocs(colRef);
+      const list: Service[] = [];
+      snap.forEach((d) => {
+        list.push({ id: d.id, ...d.data() } as Service);
+      });
+      if (list.length === 0) {
+        return SERVICES;
+      }
+      return list;
+    } catch (err) {
+      console.warn('Firestore getServicesData permission/network error, using fallback:', err);
+      return fallback;
+    }
+  })();
+
+  const result = await withTimeout(fetchPromise, 5000, fallback);
   if (result && result.length > 0) {
-    localStorage.setItem('gpa_cached_services', JSON.stringify(result));
+    try {
+      localStorage.setItem('gpa_cached_services', JSON.stringify(result));
+    } catch (e) {}
   }
-  return result;
+  return result || fallback;
 }
 
 export async function saveServiceData(service: Service): Promise<Service> {

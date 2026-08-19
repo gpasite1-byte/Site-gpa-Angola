@@ -89,6 +89,7 @@ export default function Hero({
       id="home"
       className="relative pt-36 sm:pt-44 md:pt-52 lg:pt-56 pb-16 md:pb-24 overflow-hidden text-slate-800"
     >
+      <div className="absolute inset-0 z-0 bg-cover bg-center opacity-30" style={{ backgroundImage: `url('/GPA/hero_poster.jpg'), url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1964&auto=format&fit=crop')` }} />
       <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_top_left,rgba(245,158,11,0.18),transparent_18%),radial-gradient(circle_at_bottom_right,rgba(147,51,234,0.16),transparent_30%),linear-gradient(135deg,rgba(17,13,34,0.82),rgba(15,23,42,0.72),rgba(17,13,34,0.8))]" />
       <div className="hero-orb left-8 top-20 h-52 w-52 bg-orange-300/40"></div>
       <div className="hero-orb right-10 bottom-12 h-80 w-80 bg-violet-300/30" style={{ animationDelay: '1.2s' }}></div>

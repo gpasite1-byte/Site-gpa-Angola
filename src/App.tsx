@@ -412,8 +412,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-hexagon-pattern text-slate-800 selection:bg-brand-orange selection:text-white font-sans antialiased overflow-x-hidden relative">
-      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-        <video key={videoUrl} className="page-video" autoPlay muted loop playsInline poster="/GPA/hero_poster.jpg" preload="metadata">
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none bg-cover bg-center" style={{ backgroundImage: `url('/GPA/hero_poster.jpg'), url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1964&auto=format&fit=crop')` }}>
+        <video key={videoUrl} className="page-video opacity-80" autoPlay muted loop playsInline poster="/GPA/hero_poster.jpg" preload="metadata">
           <source src={videoUrl} type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(9,10,16,0.72),rgba(18,22,35,0.54),rgba(17,13,34,0.82))]" />
