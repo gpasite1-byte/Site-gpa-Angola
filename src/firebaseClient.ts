@@ -794,81 +794,151 @@ export function subscribePageViews(callback: (views: number) => void): () => voi
 /**
  * --- MULTI-ADMIN SYSTEM ---
  */
-// Get all admin users from Firestore
+export const DEFAULT_ADMIN_USERS: AdminUser[] = [
+  {
+    id: 'admin',
+    username: 'admin',
+    passcode: 'gpa2026',
+    name: 'Administrador Principal',
+    role: 'owner',
+    status: 'active',
+    permissions: {
+      editGeneral: true,
+      editProducts: true,
+      editPartners: true,
+      editPortfolio: true,
+      editGallery: true,
+      viewQuotes: true,
+      manageAdmins: true,
+      canManageConfig: true,
+      canManageProducts: true,
+      canManageCategories: true,
+      canManageServices: true,
+      canManageGallery: true,
+      canManageQuotes: true,
+      canManageUsers: true
+    },
+    isOnline: true
+  },
+  {
+    id: 'comercial 1',
+    username: 'comercial 1',
+    passcode: 'dtp',
+    name: 'Comercial 1',
+    role: 'staff',
+    status: 'active',
+    permissions: {
+      editGeneral: false,
+      editProducts: false,
+      editPartners: false,
+      editPortfolio: false,
+      editGallery: false,
+      viewQuotes: true,
+      manageAdmins: false
+    },
+    whatsappNumber: '+244 994 943 828',
+    isOnline: true
+  }
+];
+
+// Get all admin users from Firestore or LocalStorage
 export async function getAdminUsers(): Promise<AdminUser[]> {
+  const cached = localStorage.getItem('gpa_cached_admin_users');
+  const fallback = cached ? JSON.parse(cached) : DEFAULT_ADMIN_USERS;
+
   const fetchPromise = (async () => {
-    const snap = await getDocs(collection(db, ADMIN_USERS_COLLECTION));
-    let list: AdminUser[] = [];
-    snap.forEach((d) => {
-      list.push({ id: d.id, ...d.data() } as AdminUser);
-    });
+    try {
+      const snap = await getDocs(collection(db, ADMIN_USERS_COLLECTION));
+      let list: AdminUser[] = [];
+      snap.forEach((d) => {
+        list.push({ id: d.id, ...d.data() } as AdminUser);
+      });
 
-    // Check if there is any administrator with 'owner' role. If not, seed a default master admin.
-    const hasAnyOwner = list.some(u => u.role === 'owner');
-    if (!hasAnyOwner && !list.some(u => u.username === 'admin')) {
-      const defaultOwner: AdminUser = {
-        id: 'admin',
-        username: 'admin',
-        passcode: 'gpa2026',
-        name: 'Administrador Principal',
-        role: 'owner',
-        status: 'active',
-        permissions: {
-          editGeneral: true,
-          editProducts: true,
-          editPartners: true,
-          editPortfolio: true,
-          editGallery: true,
-          viewQuotes: true,
-          manageAdmins: true
-        }
-      };
-      await setDoc(doc(db, ADMIN_USERS_COLLECTION, defaultOwner.id), defaultOwner);
-      list.push(defaultOwner);
+      if (list.length === 0) {
+        // Seed default owner
+        try {
+          await setDoc(doc(db, ADMIN_USERS_COLLECTION, DEFAULT_ADMIN_USERS[0].id), DEFAULT_ADMIN_USERS[0]);
+          await setDoc(doc(db, ADMIN_USERS_COLLECTION, DEFAULT_ADMIN_USERS[1].id), DEFAULT_ADMIN_USERS[1]);
+        } catch (e) {}
+        return fallback.length > 0 ? fallback : DEFAULT_ADMIN_USERS;
+      }
+
+      // Check if there is any administrator with 'owner' role. If not, append default master admin.
+      const hasAnyOwner = list.some(u => u.role === 'owner' || u.role === 'superadmin');
+      if (!hasAnyOwner && !list.some(u => u.username === 'admin')) {
+        list.unshift(DEFAULT_ADMIN_USERS[0]);
+      }
+
+      return list;
+    } catch (err) {
+      console.warn('Firestore getAdminUsers network/permission error, using fallback:', err);
+      return fallback;
     }
-
-    // Seed default staff only if the list has no staff/commercial agents at all! This prevents resetting edited names or phone numbers of commercials.
-    const hasAnyStaff = list.some(u => u.role === 'staff');
-    if (!hasAnyStaff && list.length <= 1) {
-      const defaultComercial: AdminUser = {
-        id: 'comercial 1',
-        username: 'comercial 1',
-        passcode: 'dtp',
-        name: 'Comercial 1',
-        role: 'staff',
-        status: 'active',
-        permissions: {
-          editGeneral: false,
-          editProducts: false,
-          editPartners: false,
-          editPortfolio: false,
-          editGallery: false,
-          viewQuotes: true,
-          manageAdmins: false
-        },
-        whatsappNumber: '+244 994 943 828',
-        isOnline: true
-      };
-      await setDoc(doc(db, ADMIN_USERS_COLLECTION, defaultComercial.id), defaultComercial);
-      list.push(defaultComercial);
-    }
-
-    return list;
   })();
-  return withTimeout(fetchPromise, 20000, []);
+
+  const result = await withTimeout(fetchPromise, 4000, fallback);
+  if (result && result.length > 0) {
+    try {
+      localStorage.setItem('gpa_cached_admin_users', JSON.stringify(result));
+    } catch (e) {}
+  }
+  return result || fallback;
 }
 
-// Save or update an admin user in Firestore
-export async function saveAdminUser(user: AdminUser): Promise<void> {
-  const cleanUsername = user.username.toLowerCase().trim();
-  const docRef = doc(db, ADMIN_USERS_COLLECTION, cleanUsername);
-  user.id = cleanUsername;
-  await setDoc(docRef, user, { merge: true });
+// Save or update an admin user in Firestore and LocalStorage
+export async function saveAdminUser(user: AdminUser): Promise<AdminUser> {
+  const cleanUsername = (user.username || user.name || `user_${Date.now()}`).toLowerCase().trim();
+  const id = user.id || cleanUsername;
+  const userToSave: AdminUser = {
+    ...user,
+    id,
+    username: cleanUsername
+  };
+
+  // 1. Immediately persist to LocalStorage for zero-delay offline reliability
+  try {
+    const cached = localStorage.getItem('gpa_cached_admin_users');
+    const list: AdminUser[] = cached ? JSON.parse(cached) : [...DEFAULT_ADMIN_USERS];
+    const idx = list.findIndex(u => u.id === id || u.username.toLowerCase().trim() === cleanUsername);
+    if (idx >= 0) {
+      list[idx] = userToSave;
+    } else {
+      list.push(userToSave);
+    }
+    localStorage.setItem('gpa_cached_admin_users', JSON.stringify(list));
+  } catch (e) {
+    console.warn('LocalStorage save error:', e);
+  }
+
+  // 2. Persist to Firestore asynchronously
+  try {
+    const docRef = doc(db, ADMIN_USERS_COLLECTION, cleanUsername);
+    await setDoc(docRef, userToSave, { merge: true });
+  } catch (err) {
+    console.warn('Firestore saveAdminUser falhou/offline:', err);
+  }
+
+  return userToSave;
 }
 
-// Delete an admin user from Firestore
+// Delete an admin user from Firestore and LocalStorage
 export async function deleteAdminUser(id: string): Promise<void> {
-  await deleteDoc(doc(db, ADMIN_USERS_COLLECTION, id));
+  // 1. Immediately delete from LocalStorage
+  try {
+    const cached = localStorage.getItem('gpa_cached_admin_users');
+    if (cached) {
+      const list: AdminUser[] = JSON.parse(cached);
+      const updated = list.filter(u => u.id !== id && u.username !== id);
+      localStorage.setItem('gpa_cached_admin_users', JSON.stringify(updated));
+    }
+  } catch (e) {}
+
+  // 2. Delete from Firestore asynchronously
+  try {
+    await deleteDoc(doc(db, ADMIN_USERS_COLLECTION, id));
+  } catch (err) {
+    console.warn('Firestore deleteAdminUser falhou/offline:', err);
+  }
 }
 
 // Verify login with username and passcode

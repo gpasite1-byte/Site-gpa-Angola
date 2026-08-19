@@ -1044,11 +1044,15 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
         }
       };
 
-      await saveAdminUser(userToSave);
+      const savedUser = await saveAdminUser(userToSave);
       showStatus(`Utilizador "${userToSave.name}" guardado com sucesso!`);
       const updatedAdmins = await getAdminUsers();
       setAdminList(updatedAdmins);
       setIsCreatingAdmin(false);
+      setSelectedAdmin(null);
+      setFormAdminUsername('');
+      setFormAdminName('');
+      setFormAdminPasscode('');
     } catch (err) {
       console.error('Error saving admin user:', err);
       showStatus('Erro ao guardar utilizador admin', true);
