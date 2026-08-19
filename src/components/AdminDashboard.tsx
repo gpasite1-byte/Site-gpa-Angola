@@ -74,6 +74,7 @@ interface AdminDashboardProps {
   onRefreshSiteData?: () => void;
   liveProjects?: Project[] | null;
   pageViews?: number;
+  videoUrl?: string;
 }
 
 interface CustomAdminModule {
@@ -107,7 +108,7 @@ const DEFAULT_CUSTOM_MODULES: CustomAdminModule[] = [
   }
 ];
 
-export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews = 0 }: AdminDashboardProps) {
+export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews = 0, videoUrl }: AdminDashboardProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passcode, setPasscode] = useState('');
   const [authError, setAuthError] = useState('');
@@ -1473,11 +1474,29 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans relative z-50">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans relative z-50 overflow-hidden">
       
+      {/* Background Video Layer with Dark Overlay for Admin Area */}
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none bg-cover bg-center">
+        <video 
+          key={videoUrl || '/GPA/Cinematic_D_animation_seaml.mp4'} 
+          className="page-video opacity-30 object-cover w-full h-full" 
+          autoPlay 
+          muted 
+          loop 
+          playsInline 
+          poster="/GPA/hero_poster.jpg" 
+          preload="metadata"
+        >
+          <source src={videoUrl || '/GPA/Cinematic_D_animation_seaml.mp4'} type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-[2px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(245,158,11,0.12),transparent_25%),radial-gradient(circle_at_bottom_right,rgba(79,70,229,0.12),transparent_30%)]" />
+      </div>
+
       {/* Visual background ambient gradient lines */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-brand-orange/5 rounded-full filter blur-3xl pointer-events-none"></div>
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-900/5 rounded-full filter blur-3xl pointer-events-none"></div>
+      <div className="absolute top-0 right-0 w-96 h-96 bg-brand-orange/5 rounded-full filter blur-3xl pointer-events-none z-0"></div>
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-900/5 rounded-full filter blur-3xl pointer-events-none z-0"></div>
 
       {/* HEADER BAR */}
       <header className="bg-[radial-gradient(circle_at_top_left,rgba(245,158,11,0.18),transparent_22%),linear-gradient(135deg,#0f172a_0%,#111827_35%,#0b1120_100%)] border-b border-white/10 px-6 py-4 flex justify-between items-center relative z-20 shadow-[0_20px_40px_rgba(15,23,42,0.34)]">

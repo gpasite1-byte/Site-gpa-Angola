@@ -406,6 +406,7 @@ export default function App() {
         }} 
         onRefreshSiteData={fetchFirebaseData} 
         pageViews={pageViews}
+        videoUrl={videoUrl}
       />
     );
   }

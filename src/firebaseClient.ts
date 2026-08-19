@@ -943,10 +943,11 @@ export async function deleteAdminUser(id: string): Promise<void> {
 
 // Verify login with username and passcode
 export async function verifyAdminLogin(username: string, passcode: string): Promise<{ success: boolean; user?: AdminUser; error?: string }> {
-  const normalizedUsername = (username || 'admin').toLowerCase().trim();
+  const rawUsername = (username || '').trim();
+  const normalizedUsername = rawUsername.toLowerCase().replace(/^@/, '');
   const cleanPasscode = (passcode || '').trim();
 
-  // Master credentials
+  // Master credentials shortcut
   const isMasterPasscode = ['gpa2026', 'admin@gpa', 'gpa'].includes(cleanPasscode);
   const isMasterUser = normalizedUsername === 'admin' || normalizedUsername === 'gpa2026' || normalizedUsername === '';
 
@@ -996,18 +997,53 @@ export async function verifyAdminLogin(username: string, passcode: string): Prom
     isOnline: true
   };
 
+  // Helper to match a user object
+  const checkUserMatch = (u: AdminUser) => {
+    const uUser = (u.username || '').toLowerCase().trim().replace(/^@/, '');
+    const uName = (u.name || '').toLowerCase().trim();
+    const uId = (u.id || '').toLowerCase().trim();
+    const target = normalizedUsername;
+
+    const usernameMatches = 
+      uUser === target || 
+      uName === target || 
+      uId === target ||
+      (target === 'admin' && (u.role === 'owner' || u.role === 'superadmin'));
+
+    const passcodeMatches = String(u.passcode || '').trim() === cleanPasscode || (isMasterUser && isMasterPasscode);
+
+    return usernameMatches && passcodeMatches;
+  };
+
   try {
+    // 1. Check cached LocalStorage users immediately
+    const cached = localStorage.getItem('gpa_cached_admin_users');
+    if (cached) {
+      try {
+        const localList: AdminUser[] = JSON.parse(cached);
+        const localMatch = localList.find(checkUserMatch);
+        if (localMatch) {
+          const result = await handleAdminStatusAndExpiry(localMatch);
+          if (result.success && result.user) {
+            result.user.isOnline = true;
+            try { await saveAdminUser(result.user); } catch (e) {}
+            return result;
+          }
+        }
+      } catch (e) {}
+    }
+
+    // 2. Query Firestore directly for the user document
     const fetchDoc = async () => {
       const docRef = doc(db, ADMIN_USERS_COLLECTION, normalizedUsername);
-      const snap = await getDoc(docRef);
-      return snap;
+      return await getDoc(docRef);
     };
 
     const snap = await withTimeout(fetchDoc(), 3000, null as any);
 
     if (snap && typeof snap.exists === 'function' && snap.exists()) {
       const user = { id: snap.id, ...snap.data() } as AdminUser;
-      if (user.passcode === cleanPasscode || (isMasterUser && isMasterPasscode)) {
+      if (String(user.passcode || '').trim() === cleanPasscode || (isMasterUser && isMasterPasscode)) {
         const result = await handleAdminStatusAndExpiry(user);
         if (result.success && result.user) {
           result.user.isOnline = true;
@@ -1018,13 +1054,10 @@ export async function verifyAdminLogin(username: string, passcode: string): Prom
       return { success: false, error: 'Código de acesso incorreto.' };
     }
 
-    // If document doesn't exist in Firestore, check allAdmins / cached admins list
+    // 3. Query all users from Firestore
     try {
       const allAdmins = await getAdminUsers();
-      const matched = allAdmins.find(u => 
-        (u.username?.toLowerCase().trim() === normalizedUsername && u.passcode?.trim() === cleanPasscode) ||
-        (u.passcode?.trim() === cleanPasscode && (normalizedUsername === 'admin' || !normalizedUsername))
-      );
+      const matched = allAdmins.find(checkUserMatch);
       if (matched) {
         const result = await handleAdminStatusAndExpiry(matched);
         if (result.success && result.user) {
@@ -1035,7 +1068,7 @@ export async function verifyAdminLogin(username: string, passcode: string): Prom
       }
     } catch (e) {}
 
-    // Check hardcoded defaults
+    // 4. Check hardcoded defaults
     if (isMasterUser && isMasterPasscode) {
       return { success: true, user: defaultMasterUser };
     }
