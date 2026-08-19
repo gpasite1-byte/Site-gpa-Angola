@@ -1622,21 +1622,24 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
         /* MAIN DASHBOARD PANEL */
         <div className="flex-1 flex flex-col md:flex-row min-h-0">
           
-          {/* SIDEBAR TABS BAR */}
-          <aside className="w-full md:w-72 bg-[linear-gradient(180deg,#0f172a_0%,#111827_100%)] border-b md:border-b-0 md:border-r border-white/10 flex flex-col justify-between py-4 shadow-[inset_-1px_0_0_rgba(255,255,255,0.06)]">
-            <div className="px-3 space-y-2">
-              <div className="px-3 py-2 text-[10px] uppercase font-mono font-bold text-slate-500 tracking-wider">
-                Controlos do Site
+          {/* SIDEBAR TABS BAR (HIGH VISIBILITY & CONTRAST) */}
+          <aside className="w-full md:w-72 bg-slate-950/95 border-b md:border-b-0 md:border-r border-slate-800/90 flex flex-col justify-between py-5 shadow-[4px_0_30px_rgba(0,0,0,0.6)] relative z-20 shrink-0 backdrop-blur-md">
+            <div className="px-3.5 space-y-2.5">
+              <div className="px-3 py-1.5 text-[11px] uppercase font-mono font-extrabold text-amber-400 tracking-wider bg-slate-900/90 rounded-lg border border-amber-400/20 shadow-xs flex items-center justify-between">
+                <span>Controlos do Site</span>
+                <span className="w-2 h-2 rounded-full bg-brand-orange animate-pulse"></span>
               </div>
 
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editGeneral) && (
                 <button
                   onClick={() => setActiveTab('general')}
-                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-colors cursor-pointer ${
-                    activeTab === 'general' ? 'bg-brand-orange text-white shadow-[0_12px_28px_rgba(245,158,11,0.20)]' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                  className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                    activeTab === 'general' 
+                      ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
+                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
                   }`}
                 >
-                  <Settings className="w-4 h-4" />
+                  <Settings className={`w-4.5 h-4.5 ${activeTab === 'general' ? 'text-white' : 'text-amber-400'}`} />
                   <span>Textos & Contactos</span>
                 </button>
               )}
@@ -1645,26 +1648,30 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                 <button
                   key={module.id}
                   onClick={() => setActiveTab(module.id)}
-                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-colors cursor-pointer ${
-                    activeTab === module.id ? 'text-white shadow-[0_12px_28px_rgba(15,23,42,0.28)]' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                  className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                    activeTab === module.id 
+                      ? 'text-white shadow-[0_10px_25px_rgba(15,23,42,0.4)] border-white/25 scale-[1.02]' 
+                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
                   }`}
-                  style={activeTab === module.id ? { background: `linear-gradient(135deg, ${module.accent}, rgba(255,255,255,0.08))` } : undefined}
+                  style={activeTab === module.id ? { background: `linear-gradient(135deg, ${module.accent}, rgba(15,23,42,0.9))` } : undefined}
                 >
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 text-sm" style={{ backgroundColor: `${module.accent}20`, color: module.accent }}>
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/20 text-sm font-bold shadow-xs" style={{ backgroundColor: `${module.accent}30`, color: module.accent }}>
                     {module.icon}
                   </span>
-                  <span>{module.title}</span>
+                  <span className="truncate">{module.title}</span>
                 </button>
               ))}
 
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editPartners) && (
                 <button
                   onClick={() => setActiveTab('partners')}
-                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-colors cursor-pointer ${
-                    activeTab === 'partners' ? 'bg-brand-orange text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                  className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                    activeTab === 'partners' 
+                      ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
+                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
                   }`}
                 >
-                  <Users className="w-4 h-4" />
+                  <Users className={`w-4.5 h-4.5 ${activeTab === 'partners' ? 'text-white' : 'text-blue-400'}`} />
                   <span>Marcas Parceiras</span>
                 </button>
               )}
@@ -1672,11 +1679,13 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editGallery) && (
                 <button
                   onClick={() => setActiveTab('gallery')}
-                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-colors cursor-pointer ${
-                    activeTab === 'gallery' ? 'bg-brand-orange text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                  className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                    activeTab === 'gallery' 
+                      ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
+                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
                   }`}
                 >
-                  <ImageIcon className="w-4 h-4" />
+                  <ImageIcon className={`w-4.5 h-4.5 ${activeTab === 'gallery' ? 'text-white' : 'text-emerald-400'}`} />
                   <span>Galeria de Produção</span>
                 </button>
               )}
@@ -1684,11 +1693,13 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editPortfolio) && (
                 <button
                   onClick={() => setActiveTab('portfolio')}
-                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-colors cursor-pointer ${
-                    activeTab === 'portfolio' ? 'bg-brand-orange text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                  className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                    activeTab === 'portfolio' 
+                      ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
+                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
                   }`}
                 >
-                  <Sparkles className="w-4 h-4" />
+                  <Sparkles className={`w-4.5 h-4.5 ${activeTab === 'portfolio' ? 'text-white' : 'text-purple-400'}`} />
                   <span>Portfólio de Sucesso</span>
                 </button>
               )}
@@ -1696,11 +1707,13 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editProducts) && (
                 <button
                   onClick={() => setActiveTab('prices')}
-                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-colors cursor-pointer ${
-                    activeTab === 'prices' ? 'bg-brand-orange text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                  className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                    activeTab === 'prices' 
+                      ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
+                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
                   }`}
                 >
-                  <FileSpreadsheet className="w-4 h-4" />
+                  <FileSpreadsheet className={`w-4.5 h-4.5 ${activeTab === 'prices' ? 'text-white' : 'text-amber-400'}`} />
                   <span>Preçário & Taxas</span>
                 </button>
               )}
@@ -1708,11 +1721,13 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editGeneral) && (
                 <button
                   onClick={() => setActiveTab('services')}
-                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-colors cursor-pointer ${
-                    activeTab === 'services' ? 'bg-brand-orange text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                  className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                    activeTab === 'services' 
+                      ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
+                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
                   }`}
                 >
-                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  <Sparkles className={`w-4.5 h-4.5 ${activeTab === 'services' ? 'text-white' : 'text-amber-400'}`} />
                   <span>Serviços & Fotografias</span>
                 </button>
               )}
@@ -1720,15 +1735,17 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editProducts) && (
                 <button
                   onClick={() => setActiveTab('store-products')}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-colors cursor-pointer ${
-                    activeTab === 'store-products' ? 'bg-brand-orange text-white shadow-[0_12px_28px_rgba(245,158,11,0.20)]' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                  className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                    activeTab === 'store-products' 
+                      ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
+                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
                   }`}
                 >
                   <div className="flex items-center space-x-3">
-                    <ShoppingBag className="w-4 h-4 text-amber-400" />
+                    <ShoppingBag className={`w-4.5 h-4.5 ${activeTab === 'store-products' ? 'text-white' : 'text-amber-400'}`} />
                     <span>Produtos da Loja</span>
                   </div>
-                  <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full ${activeTab === 'store-products' ? 'bg-white text-brand-orange' : 'bg-brand-orange/20 text-brand-orange'}`}>
+                  <span className={`text-[10px] font-mono font-extrabold px-2 py-0.5 rounded-full ${activeTab === 'store-products' ? 'bg-white text-brand-orange' : 'bg-brand-orange text-white'}`}>
                     {storeProducts.length}
                   </span>
                 </button>
@@ -1737,37 +1754,42 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editProducts) && (
                 <button
                   onClick={() => setActiveTab('categories')}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-colors cursor-pointer ${
-                    activeTab === 'categories' ? 'bg-brand-orange text-white shadow-[0_12px_28px_rgba(245,158,11,0.20)]' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                  className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                    activeTab === 'categories' 
+                      ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
+                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
                   }`}
                 >
                   <div className="flex items-center space-x-3">
-                    <Tag className="w-4 h-4 text-orange-400" />
+                    <Tag className={`w-4.5 h-4.5 ${activeTab === 'categories' ? 'text-white' : 'text-orange-400'}`} />
                     <span>Categorias & Capas</span>
                   </div>
-                  <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full ${activeTab === 'categories' ? 'bg-white text-brand-orange' : 'bg-orange-500/20 text-orange-300'}`}>
+                  <span className={`text-[10px] font-mono font-extrabold px-2 py-0.5 rounded-full ${activeTab === 'categories' ? 'bg-white text-brand-orange' : 'bg-orange-500 text-white'}`}>
                     {storeCategories.length}
                   </span>
                 </button>
               )}
 
-              <div className="px-3 py-2 pt-4 text-[10px] uppercase font-mono font-bold text-slate-500 tracking-wider">
-                Registos de Clientes
+              <div className="px-3 py-1.5 pt-3 text-[11px] uppercase font-mono font-extrabold text-blue-400 tracking-wider bg-slate-900/90 rounded-lg border border-blue-400/20 shadow-xs flex items-center justify-between">
+                <span>Registos de Clientes</span>
+                <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
               </div>
 
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.viewQuotes) && (
                 <button
                   onClick={() => setActiveTab('quotes')}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-colors cursor-pointer ${
-                    activeTab === 'quotes' ? 'bg-brand-orange text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                  className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                    activeTab === 'quotes' 
+                      ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
+                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
                   }`}
                 >
                   <div className="flex items-center space-x-3">
-                    <FileText className="w-4 h-4" />
+                    <FileText className={`w-4.5 h-4.5 ${activeTab === 'quotes' ? 'text-white' : 'text-amber-400'}`} />
                     <span>Pedidos de Orçamento</span>
                   </div>
                   {quotes.length > 0 && (
-                    <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full ${activeTab === 'quotes' ? 'bg-white text-brand-orange' : 'bg-brand-orange text-white'}`}>
+                    <span className={`text-[10px] font-mono font-extrabold px-2 py-0.5 rounded-full ${activeTab === 'quotes' ? 'bg-white text-brand-orange' : 'bg-brand-orange text-white'}`}>
                       {quotes.length}
                     </span>
                   )}
@@ -1777,11 +1799,13 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editPortfolio) && (
                 <button
                   onClick={() => setActiveTab('testimonials')}
-                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-colors cursor-pointer ${
-                    activeTab === 'testimonials' ? 'bg-brand-orange text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                  className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                    activeTab === 'testimonials' 
+                      ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
+                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
                   }`}
                 >
-                  <MessageSquare className="w-4 h-4" />
+                  <MessageSquare className={`w-4.5 h-4.5 ${activeTab === 'testimonials' ? 'text-white' : 'text-teal-400'}`} />
                   <span>Depoimentos</span>
                 </button>
               )}
@@ -1789,67 +1813,74 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.role === 'staff') && (
                 <button
                   onClick={() => setActiveTab('comercial')}
-                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-bold tracking-wide transition-colors cursor-pointer ${
-                    activeTab === 'comercial' ? 'bg-brand-orange text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                  className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                    activeTab === 'comercial' 
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-[0_10px_25px_rgba(16,185,129,0.35)] border-emerald-400/40 scale-[1.02]' 
+                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
                   }`}
                 >
-                  <MessageCircle className="w-4 h-4 text-emerald-400" />
+                  <MessageCircle className={`w-4.5 h-4.5 ${activeTab === 'comercial' ? 'text-white' : 'text-emerald-400'}`} />
                   <span>Atendimento WhatsApp</span>
                 </button>
               )}
 
-              <div className="px-3 py-2 pt-4 text-[10px] uppercase font-mono font-bold text-slate-500 tracking-wider">
-                Definições & Gestão
+              <div className="px-3 py-1.5 pt-3 text-[11px] uppercase font-mono font-extrabold text-purple-400 tracking-wider bg-slate-900/90 rounded-lg border border-purple-400/20 shadow-xs flex items-center justify-between">
+                <span>Definições & Gestão</span>
+                <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
               </div>
 
-              {currentAdmin && currentAdmin.role === 'owner' && (
+              {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.role === 'superadmin' || currentAdmin.permissions.manageAdmins) && (
                 <button
                   onClick={() => setActiveTab('admins')}
-                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-colors cursor-pointer ${
-                    activeTab === 'admins' ? 'bg-brand-orange text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                  className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                    activeTab === 'admins' 
+                      ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
+                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
                   }`}
                 >
-                  <Users className="w-4 h-4 text-brand-orange" />
-                  <span className="font-bold text-slate-200">Gestão de Admins</span>
+                  <Users className={`w-4.5 h-4.5 ${activeTab === 'admins' ? 'text-white' : 'text-amber-400'}`} />
+                  <span className="font-extrabold">Gestão de Equipa & Admins</span>
                 </button>
               )}
 
-              {currentAdmin && currentAdmin.role === 'owner' && (
+              {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.role === 'superadmin') && (
                 <button
                   onClick={() => setActiveTab('security')}
-                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-colors cursor-pointer ${
-                    activeTab === 'security' ? 'bg-brand-orange text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                  className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                    activeTab === 'security' 
+                      ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
+                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
                   }`}
                 >
-                  <Lock className="w-4 h-4" />
+                  <Lock className={`w-4.5 h-4.5 ${activeTab === 'security' ? 'text-white' : 'text-red-400'}`} />
                   <span>Segurança Geral</span>
                 </button>
               )}
             </div>
 
-            <div className="px-3 pt-6 border-t border-white/5 space-y-3">
-              <div className="bg-slate-800/60 border border-white/5 rounded-2xl p-3">
+            <div className="px-3.5 pt-5 border-t border-slate-800/90 space-y-3">
+              <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3 shadow-inner">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] uppercase tracking-[0.2em] font-mono text-slate-400">Módulos</span>
+                  <span className="text-[10px] uppercase tracking-[0.2em] font-mono font-extrabold text-amber-400">Módulos</span>
                   <button
                     type="button"
                     onClick={handleSaveCustomModules}
-                    className="text-[10px] font-bold text-brand-orange hover:text-orange-300 transition-colors"
+                    className="text-[10px] font-extrabold text-brand-orange hover:text-orange-300 transition-colors cursor-pointer bg-brand-orange/10 px-2 py-0.5 rounded-md border border-brand-orange/20"
                   >
                     Guardar
                   </button>
                 </div>
                 <div className="space-y-2">
                   {customModules.map((module) => (
-                    <div key={module.id} className="flex items-center justify-between gap-2 rounded-xl border border-white/5 bg-slate-950/60 px-2 py-1.5">
+                    <div key={module.id} className="flex items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-950/80 px-2.5 py-1.5 shadow-xs">
                       <div className="flex items-center gap-2 truncate">
-                        <span className="flex h-6 w-6 items-center justify-center rounded-lg text-xs" style={{ backgroundColor: `${module.accent}20`, color: module.accent }}>{module.icon}</span>
-                        <span className="text-xs text-slate-200 truncate">{module.title}</span>
+                        <span className="flex h-6 w-6 items-center justify-center rounded-lg text-xs font-bold" style={{ backgroundColor: `${module.accent}25`, color: module.accent }}>{module.icon}</span>
+                        <span className="text-xs text-slate-100 font-semibold truncate">{module.title}</span>
                       </div>
                       <button
                         type="button"
                         onClick={() => toggleCustomModule(module.id)}
-                        className={`text-[9px] font-bold px-2 py-1 rounded-full ${module.enabled ? 'bg-emerald-500/10 text-emerald-400' : 'bg-slate-700 text-slate-300'}`}
+                        className={`text-[9px] font-extrabold px-2.5 py-1 rounded-full cursor-pointer transition-colors ${module.enabled ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-slate-800 text-slate-400 border border-slate-700'}`}
                       >
                         {module.enabled ? 'Ativo' : 'Off'}
                       </button>
@@ -1858,13 +1889,18 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                 </div>
               </div>
 
-              <div className="px-3 mb-2 flex items-center space-x-2 text-[10px] font-mono text-slate-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span className="truncate max-w-[150px]">{currentAdmin?.name || 'Administrador'}</span>
+              <div className="px-3 py-2 bg-slate-900/80 border border-slate-800 rounded-xl flex items-center justify-between text-xs font-mono text-slate-200">
+                <div className="flex items-center space-x-2 truncate">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+                  <span className="truncate font-bold text-slate-100">{currentAdmin?.name || 'Administrador'}</span>
+                </div>
+                <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-brand-orange/20 text-brand-orange font-bold font-mono">
+                  {currentAdmin?.role || 'Admin'}
+                </span>
               </div>
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-bold text-red-400 hover:bg-red-950/30 transition-colors cursor-pointer"
+                className="w-full flex items-center justify-center space-x-2 px-3 py-2.5 rounded-xl text-xs font-bold text-red-300 bg-red-950/40 border border-red-800/50 hover:bg-red-900/60 hover:text-white transition-all cursor-pointer shadow-sm"
               >
                 <LogOut className="w-4 h-4" />
                 <span>Terminar Sessão</span>
@@ -1873,7 +1909,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
           </aside>
 
           {/* CONTENT PANEL BODY */}
-          <main className="flex-1 bg-slate-950 p-6 md:p-8 overflow-y-auto min-h-0 relative">
+          <main className="flex-1 bg-slate-950/85 backdrop-blur-md p-6 md:p-8 overflow-y-auto min-h-0 relative z-10">
             
             {/* Real-time status toast */}
             {statusMessage && (

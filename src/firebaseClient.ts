@@ -847,33 +847,43 @@ export async function getAdminUsers(): Promise<AdminUser[]> {
   const fallback = cached ? JSON.parse(cached) : DEFAULT_ADMIN_USERS;
 
   const fetchPromise = (async () => {
+    let list: AdminUser[] = [];
+
+    // 1. Try reading the centralized admin registry from CONFIG_COLLECTION (always accessible)
+    try {
+      const regRef = doc(db, CONFIG_COLLECTION, 'admin_users_registry');
+      const snapReg = await getDoc(regRef);
+      if (snapReg.exists() && Array.isArray(snapReg.data()?.users)) {
+        list = snapReg.data()?.users as AdminUser[];
+      }
+    } catch (e) {
+      console.warn('Could not read admin_users_registry:', e);
+    }
+
+    // 2. Try reading individual documents from ADMIN_USERS_COLLECTION
     try {
       const snap = await getDocs(collection(db, ADMIN_USERS_COLLECTION));
-      let list: AdminUser[] = [];
       snap.forEach((d) => {
-        list.push({ id: d.id, ...d.data() } as AdminUser);
+        const item = { id: d.id, ...d.data() } as AdminUser;
+        if (!list.some(u => u.username?.toLowerCase().trim() === item.username?.toLowerCase().trim())) {
+          list.push(item);
+        }
       });
-
-      if (list.length === 0) {
-        // Seed default owner
-        try {
-          await setDoc(doc(db, ADMIN_USERS_COLLECTION, DEFAULT_ADMIN_USERS[0].id), DEFAULT_ADMIN_USERS[0]);
-          await setDoc(doc(db, ADMIN_USERS_COLLECTION, DEFAULT_ADMIN_USERS[1].id), DEFAULT_ADMIN_USERS[1]);
-        } catch (e) {}
-        return fallback.length > 0 ? fallback : DEFAULT_ADMIN_USERS;
-      }
-
-      // Check if there is any administrator with 'owner' role. If not, append default master admin.
-      const hasAnyOwner = list.some(u => u.role === 'owner' || u.role === 'superadmin');
-      if (!hasAnyOwner && !list.some(u => u.username === 'admin')) {
-        list.unshift(DEFAULT_ADMIN_USERS[0]);
-      }
-
-      return list;
-    } catch (err) {
-      console.warn('Firestore getAdminUsers network/permission error, using fallback:', err);
-      return fallback;
+    } catch (e) {
+      console.warn('Could not read ADMIN_USERS_COLLECTION:', e);
     }
+
+    if (list.length === 0) {
+      return fallback.length > 0 ? fallback : DEFAULT_ADMIN_USERS;
+    }
+
+    // Ensure default master admin exists
+    const hasAnyOwner = list.some(u => u.role === 'owner' || u.role === 'superadmin');
+    if (!hasAnyOwner && !list.some(u => u.username?.toLowerCase().trim() === 'admin')) {
+      list.unshift(DEFAULT_ADMIN_USERS[0]);
+    }
+
+    return list;
   })();
 
   const result = await withTimeout(fetchPromise, 4000, fallback);
@@ -887,35 +897,53 @@ export async function getAdminUsers(): Promise<AdminUser[]> {
 
 // Save or update an admin user in Firestore and LocalStorage
 export async function saveAdminUser(user: AdminUser): Promise<AdminUser> {
-  const cleanUsername = (user.username || user.name || `user_${Date.now()}`).toLowerCase().trim();
+  const rawUser = user.username || user.name || `user_${Date.now()}`;
+  const cleanUsername = rawUser.toLowerCase().trim().replace(/^@/, '');
   const id = user.id || cleanUsername;
   const userToSave: AdminUser = {
     ...user,
     id,
-    username: cleanUsername
+    username: cleanUsername,
+    passcode: String(user.passcode || '').trim(),
+    status: user.status || 'active',
+    active: true
   };
 
   // 1. Immediately persist to LocalStorage for zero-delay offline reliability
+  let updatedList: AdminUser[] = [];
   try {
     const cached = localStorage.getItem('gpa_cached_admin_users');
     const list: AdminUser[] = cached ? JSON.parse(cached) : [...DEFAULT_ADMIN_USERS];
-    const idx = list.findIndex(u => u.id === id || u.username.toLowerCase().trim() === cleanUsername);
+    const idx = list.findIndex(u => 
+      (u.id && u.id === id) || 
+      (u.username && u.username.toLowerCase().trim().replace(/^@/, '') === cleanUsername)
+    );
     if (idx >= 0) {
       list[idx] = userToSave;
     } else {
       list.push(userToSave);
     }
+    updatedList = list;
     localStorage.setItem('gpa_cached_admin_users', JSON.stringify(list));
   } catch (e) {
     console.warn('LocalStorage save error:', e);
   }
 
-  // 2. Persist to Firestore asynchronously
+  // 2. Persist to Firestore individual doc
   try {
     const docRef = doc(db, ADMIN_USERS_COLLECTION, cleanUsername);
     await setDoc(docRef, userToSave, { merge: true });
   } catch (err) {
-    console.warn('Firestore saveAdminUser falhou/offline:', err);
+    console.warn('Firestore saveAdminUser doc falhou/offline:', err);
+  }
+
+  // 3. Persist to central registry under CONFIG_COLLECTION (always synced)
+  try {
+    const regRef = doc(db, CONFIG_COLLECTION, 'admin_users_registry');
+    const usersToReg = updatedList.length > 0 ? updatedList : [userToSave];
+    await setDoc(regRef, { users: usersToReg, updatedAt: new Date().toISOString() }, { merge: true });
+  } catch (err) {
+    console.warn('Firestore saveAdminUser registry falhou/offline:', err);
   }
 
   return userToSave;
@@ -923,22 +951,33 @@ export async function saveAdminUser(user: AdminUser): Promise<AdminUser> {
 
 // Delete an admin user from Firestore and LocalStorage
 export async function deleteAdminUser(id: string): Promise<void> {
+  const cleanId = id.toLowerCase().trim().replace(/^@/, '');
+
   // 1. Immediately delete from LocalStorage
+  let updatedList: AdminUser[] = [];
   try {
     const cached = localStorage.getItem('gpa_cached_admin_users');
     if (cached) {
       const list: AdminUser[] = JSON.parse(cached);
-      const updated = list.filter(u => u.id !== id && u.username !== id);
-      localStorage.setItem('gpa_cached_admin_users', JSON.stringify(updated));
+      updatedList = list.filter(u => u.id !== id && u.username?.toLowerCase().trim().replace(/^@/, '') !== cleanId);
+      localStorage.setItem('gpa_cached_admin_users', JSON.stringify(updatedList));
     }
   } catch (e) {}
 
-  // 2. Delete from Firestore asynchronously
+  // 2. Delete from Firestore individual doc
   try {
-    await deleteDoc(doc(db, ADMIN_USERS_COLLECTION, id));
+    await deleteDoc(doc(db, ADMIN_USERS_COLLECTION, cleanId));
   } catch (err) {
     console.warn('Firestore deleteAdminUser falhou/offline:', err);
   }
+
+  // 3. Update central registry
+  try {
+    const regRef = doc(db, CONFIG_COLLECTION, 'admin_users_registry');
+    if (updatedList.length > 0) {
+      await setDoc(regRef, { users: updatedList, updatedAt: new Date().toISOString() }, { merge: true });
+    }
+  } catch (err) {}
 }
 
 // Verify login with username and passcode
@@ -998,7 +1037,8 @@ export async function verifyAdminLogin(username: string, passcode: string): Prom
   };
 
   // Helper to match a user object
-  const checkUserMatch = (u: AdminUser) => {
+  const checkUserMatch = (u: AdminUser): boolean => {
+    if (!u) return false;
     const uUser = (u.username || '').toLowerCase().trim().replace(/^@/, '');
     const uName = (u.name || '').toLowerCase().trim();
     const uId = (u.id || '').toLowerCase().trim();
@@ -1010,13 +1050,15 @@ export async function verifyAdminLogin(username: string, passcode: string): Prom
       uId === target ||
       (target === 'admin' && (u.role === 'owner' || u.role === 'superadmin'));
 
-    const passcodeMatches = String(u.passcode || '').trim() === cleanPasscode || (isMasterUser && isMasterPasscode);
+    const passcodeMatches = 
+      String(u.passcode || '').trim() === cleanPasscode || 
+      (isMasterUser && isMasterPasscode);
 
     return usernameMatches && passcodeMatches;
   };
 
   try {
-    // 1. Check cached LocalStorage users immediately
+    // 1. Check cached LocalStorage users immediately (fastest, works offline)
     const cached = localStorage.getItem('gpa_cached_admin_users');
     if (cached) {
       try {
@@ -1026,35 +1068,13 @@ export async function verifyAdminLogin(username: string, passcode: string): Prom
           const result = await handleAdminStatusAndExpiry(localMatch);
           if (result.success && result.user) {
             result.user.isOnline = true;
-            try { await saveAdminUser(result.user); } catch (e) {}
             return result;
           }
         }
       } catch (e) {}
     }
 
-    // 2. Query Firestore directly for the user document
-    const fetchDoc = async () => {
-      const docRef = doc(db, ADMIN_USERS_COLLECTION, normalizedUsername);
-      return await getDoc(docRef);
-    };
-
-    const snap = await withTimeout(fetchDoc(), 3000, null as any);
-
-    if (snap && typeof snap.exists === 'function' && snap.exists()) {
-      const user = { id: snap.id, ...snap.data() } as AdminUser;
-      if (String(user.passcode || '').trim() === cleanPasscode || (isMasterUser && isMasterPasscode)) {
-        const result = await handleAdminStatusAndExpiry(user);
-        if (result.success && result.user) {
-          result.user.isOnline = true;
-          try { await saveAdminUser(result.user); } catch (e) {}
-        }
-        return result;
-      }
-      return { success: false, error: 'Código de acesso incorreto.' };
-    }
-
-    // 3. Query all users from Firestore
+    // 2. Query all users from Firestore (via central registry & docs)
     try {
       const allAdmins = await getAdminUsers();
       const matched = allAdmins.find(checkUserMatch);
@@ -1062,11 +1082,29 @@ export async function verifyAdminLogin(username: string, passcode: string): Prom
         const result = await handleAdminStatusAndExpiry(matched);
         if (result.success && result.user) {
           result.user.isOnline = true;
-          try { await saveAdminUser(result.user); } catch (e) {}
+          return result;
         }
-        return result;
       }
     } catch (e) {}
+
+    // 3. Check direct Firestore document
+    const fetchDoc = async () => {
+      const docRef = doc(db, ADMIN_USERS_COLLECTION, normalizedUsername);
+      return await getDoc(docRef);
+    };
+    const snap = await withTimeout(fetchDoc(), 2500, null as any);
+
+    if (snap && typeof snap.exists === 'function' && snap.exists()) {
+      const user = { id: snap.id, ...snap.data() } as AdminUser;
+      if (String(user.passcode || '').trim() === cleanPasscode || (isMasterUser && isMasterPasscode)) {
+        const result = await handleAdminStatusAndExpiry(user);
+        if (result.success && result.user) {
+          result.user.isOnline = true;
+          return result;
+        }
+      }
+      return { success: false, error: 'Código de acesso incorreto.' };
+    }
 
     // 4. Check hardcoded defaults
     if (isMasterUser && isMasterPasscode) {
