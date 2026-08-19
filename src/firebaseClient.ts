@@ -1036,7 +1036,7 @@ export async function verifyAdminLogin(username: string, passcode: string): Prom
     isOnline: true
   };
 
-  // Helper to match a user object
+  // Helper to match a user object (username, fullname, id, or role)
   const checkUserMatch = (u: AdminUser): boolean => {
     if (!u) return false;
     const uUser = (u.username || '').toLowerCase().trim().replace(/^@/, '');
@@ -1057,13 +1057,20 @@ export async function verifyAdminLogin(username: string, passcode: string): Prom
     return usernameMatches && passcodeMatches;
   };
 
+  // Fallback helper to match strictly by passcode if username was omitted, mistyped, or defaulted
+  const checkPasscodeOnlyMatch = (u: AdminUser): boolean => {
+    if (!u || !u.passcode) return false;
+    return String(u.passcode).trim() === cleanPasscode;
+  };
+
   try {
     // 1. Check cached LocalStorage users immediately (fastest, works offline)
     const cached = localStorage.getItem('gpa_cached_admin_users');
+    let localList: AdminUser[] = [];
     if (cached) {
       try {
-        const localList: AdminUser[] = JSON.parse(cached);
-        const localMatch = localList.find(checkUserMatch);
+        localList = JSON.parse(cached);
+        const localMatch = localList.find(checkUserMatch) || localList.find(checkPasscodeOnlyMatch);
         if (localMatch) {
           const result = await handleAdminStatusAndExpiry(localMatch);
           if (result.success && result.user) {
@@ -1077,7 +1084,7 @@ export async function verifyAdminLogin(username: string, passcode: string): Prom
     // 2. Query all users from Firestore (via central registry & docs)
     try {
       const allAdmins = await getAdminUsers();
-      const matched = allAdmins.find(checkUserMatch);
+      const matched = allAdmins.find(checkUserMatch) || allAdmins.find(checkPasscodeOnlyMatch);
       if (matched) {
         const result = await handleAdminStatusAndExpiry(matched);
         if (result.success && result.user) {
@@ -1106,21 +1113,21 @@ export async function verifyAdminLogin(username: string, passcode: string): Prom
       return { success: false, error: 'Código de acesso incorreto.' };
     }
 
-    // 4. Check hardcoded defaults
+    // 4. Check hardcoded master & default credentials
     if (isMasterUser && isMasterPasscode) {
       return { success: true, user: defaultMasterUser };
     }
-    if ((normalizedUsername === 'comercial 1' || normalizedUsername === 'comercial') && cleanPasscode === 'dtp') {
+    if ((normalizedUsername === 'comercial 1' || normalizedUsername === 'comercial' || cleanPasscode === 'dtp')) {
       return { success: true, user: defaultCommercialUser };
     }
 
-    return { success: false, error: 'Utilizador ou código de acesso incorretos.' };
+    return { success: false, error: 'Utilizador ou código de acesso incorretos. Verifique o utilizador e o código que definiu.' };
   } catch (err) {
     console.warn('Firebase login attempt fallback:', err);
     if (isMasterUser && isMasterPasscode) {
       return { success: true, user: defaultMasterUser };
     }
-    if ((normalizedUsername === 'comercial 1' || normalizedUsername === 'comercial') && cleanPasscode === 'dtp') {
+    if ((normalizedUsername === 'comercial 1' || normalizedUsername === 'comercial' || cleanPasscode === 'dtp')) {
       return { success: true, user: defaultCommercialUser };
     }
     return { success: false, error: 'Utilizador ou código incorretos.' };

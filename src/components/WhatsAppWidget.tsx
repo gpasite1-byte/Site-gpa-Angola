@@ -196,7 +196,7 @@ export default function WhatsAppWidget({ companyPhones }: WhatsAppWidgetProps) {
             animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 30, x: 10 }}
             transition={{ type: 'spring', damping: 22, stiffness: 220 }}
-            className="absolute bottom-16 sm:bottom-18 right-0 w-[320px] sm:w-[360px] bg-white rounded-3xl overflow-hidden shadow-2xl border border-gray-150 flex flex-col h-[450px] z-50"
+            className="absolute bottom-16 sm:bottom-18 right-0 w-[calc(100vw-3rem)] max-w-[360px] bg-white rounded-3xl overflow-hidden shadow-2xl border border-gray-150 flex flex-col h-[420px] sm:h-[450px] z-50"
           >
             {/* Widget Green Header */}
             <div className="bg-whatsapp-dark text-white p-4 flex items-center justify-between shadow-sm relative">

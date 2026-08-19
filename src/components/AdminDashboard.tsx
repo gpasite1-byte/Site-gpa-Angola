@@ -1011,6 +1011,9 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
     }
   };
 
+  const handleEditAdminClick = handleEditAdminUserClick;
+  const handleDeleteAdmin = handleDeleteAdminUserItem;
+
   const handleSaveAdminUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formAdminUsername.trim() || !formAdminName.trim() || !formAdminPasscode.trim()) {
@@ -1019,13 +1022,19 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
     }
     setIsLoading(true);
     try {
+      const cleanUser = formAdminUsername.trim().toLowerCase().replace(/^@/, '');
       const userToSave: AdminUser = {
-        id: selectedAdmin ? selectedAdmin.id : `admin_${Date.now()}`,
+        id: selectedAdmin ? selectedAdmin.id : cleanUser,
         name: formAdminName.trim(),
-        username: formAdminUsername.trim().toLowerCase(),
+        username: cleanUser,
         passcode: formAdminPasscode.trim(),
         role: formAdminRole as any,
         active: true,
+        status: formAdminStatus || 'active',
+        whatsappNumber: formAdminWhatsapp || '',
+        isOnline: formAdminIsOnline,
+        blockExpiresAt: formAdminBlockExpiresAt || null,
+        silenceExpiresAt: formAdminSilenceExpiresAt || null,
         createdAt: selectedAdmin?.createdAt || new Date().toISOString(),
         permissions: {
           canManageConfig: (formAdminPermissions as any).canManageConfig ?? true,
@@ -1046,7 +1055,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
       };
 
       const savedUser = await saveAdminUser(userToSave);
-      showStatus(`Utilizador "${userToSave.name}" guardado com sucesso!`);
+      showStatus(`Utilizador "${userToSave.name}" guardado com sucesso! Código: ${userToSave.passcode}`);
       const updatedAdmins = await getAdminUsers();
       setAdminList(updatedAdmins);
       setIsCreatingAdmin(false);
@@ -1622,10 +1631,10 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
         /* MAIN DASHBOARD PANEL */
         <div className="flex-1 flex flex-col md:flex-row min-h-0">
           
-          {/* SIDEBAR TABS BAR (HIGH VISIBILITY & CONTRAST) */}
-          <aside className="w-full md:w-72 bg-slate-950/95 border-b md:border-b-0 md:border-r border-slate-800/90 flex flex-col justify-between py-5 shadow-[4px_0_30px_rgba(0,0,0,0.6)] relative z-20 shrink-0 backdrop-blur-md">
-            <div className="px-3.5 space-y-2.5">
-              <div className="px-3 py-1.5 text-[11px] uppercase font-mono font-extrabold text-amber-400 tracking-wider bg-slate-900/90 rounded-lg border border-amber-400/20 shadow-xs flex items-center justify-between">
+          {/* SIDEBAR TABS BAR (HIGH VISIBILITY, CONTRAST & FULL MOBILE RESPONSIVENESS) */}
+          <aside className="w-full md:w-72 bg-slate-950/95 border-b md:border-b-0 md:border-r border-slate-800/90 flex flex-col justify-between py-2.5 md:py-5 shadow-[4px_0_30px_rgba(0,0,0,0.6)] relative z-20 shrink-0 backdrop-blur-md">
+            <div className="px-2 md:px-3.5 flex md:flex-col overflow-x-auto md:overflow-y-auto no-scrollbar gap-1.5 md:space-y-2.5 pb-1 md:pb-0">
+              <div className="hidden md:flex px-3 py-1.5 text-[11px] uppercase font-mono font-extrabold text-amber-400 tracking-wider bg-slate-900/90 rounded-lg border border-amber-400/20 shadow-xs items-center justify-between">
                 <span>Controlos do Site</span>
                 <span className="w-2 h-2 rounded-full bg-brand-orange animate-pulse"></span>
               </div>
@@ -1633,7 +1642,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editGeneral) && (
                 <button
                   onClick={() => setActiveTab('general')}
-                  className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
                     activeTab === 'general' 
                       ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
                       : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
@@ -1648,14 +1657,14 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                 <button
                   key={module.id}
                   onClick={() => setActiveTab(module.id)}
-                  className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
                     activeTab === module.id 
                       ? 'text-white shadow-[0_10px_25px_rgba(15,23,42,0.4)] border-white/25 scale-[1.02]' 
                       : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
                   }`}
                   style={activeTab === module.id ? { background: `linear-gradient(135deg, ${module.accent}, rgba(15,23,42,0.9))` } : undefined}
                 >
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/20 text-sm font-bold shadow-xs" style={{ backgroundColor: `${module.accent}30`, color: module.accent }}>
+                  <span className="flex h-6 w-6 md:h-7 md:w-7 items-center justify-center rounded-lg border border-white/20 text-xs md:text-sm font-bold shadow-xs" style={{ backgroundColor: `${module.accent}30`, color: module.accent }}>
                     {module.icon}
                   </span>
                   <span className="truncate">{module.title}</span>
@@ -1665,7 +1674,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editPartners) && (
                 <button
                   onClick={() => setActiveTab('partners')}
-                  className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
                     activeTab === 'partners' 
                       ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
                       : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
@@ -1679,7 +1688,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editGallery) && (
                 <button
                   onClick={() => setActiveTab('gallery')}
-                  className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
                     activeTab === 'gallery' 
                       ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
                       : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
@@ -1693,7 +1702,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editPortfolio) && (
                 <button
                   onClick={() => setActiveTab('portfolio')}
-                  className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
                     activeTab === 'portfolio' 
                       ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
                       : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
@@ -1707,7 +1716,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editProducts) && (
                 <button
                   onClick={() => setActiveTab('prices')}
-                  className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
                     activeTab === 'prices' 
                       ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
                       : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
@@ -1721,7 +1730,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editGeneral) && (
                 <button
                   onClick={() => setActiveTab('services')}
-                  className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
                     activeTab === 'services' 
                       ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
                       : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
@@ -1735,17 +1744,17 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editProducts) && (
                 <button
                   onClick={() => setActiveTab('store-products')}
-                  className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                  className={`shrink-0 md:w-full flex items-center justify-between space-x-2 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
                     activeTab === 'store-products' 
                       ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
                       : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
                   }`}
                 >
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2 md:space-x-3">
                     <ShoppingBag className={`w-4.5 h-4.5 ${activeTab === 'store-products' ? 'text-white' : 'text-amber-400'}`} />
                     <span>Produtos da Loja</span>
                   </div>
-                  <span className={`text-[10px] font-mono font-extrabold px-2 py-0.5 rounded-full ${activeTab === 'store-products' ? 'bg-white text-brand-orange' : 'bg-brand-orange text-white'}`}>
+                  <span className={`text-[10px] font-mono font-extrabold px-1.5 md:px-2 py-0.5 rounded-full ${activeTab === 'store-products' ? 'bg-white text-brand-orange' : 'bg-brand-orange text-white'}`}>
                     {storeProducts.length}
                   </span>
                 </button>
@@ -1754,23 +1763,23 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editProducts) && (
                 <button
                   onClick={() => setActiveTab('categories')}
-                  className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                  className={`shrink-0 md:w-full flex items-center justify-between space-x-2 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
                     activeTab === 'categories' 
                       ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
                       : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
                   }`}
                 >
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2 md:space-x-3">
                     <Tag className={`w-4.5 h-4.5 ${activeTab === 'categories' ? 'text-white' : 'text-orange-400'}`} />
                     <span>Categorias & Capas</span>
                   </div>
-                  <span className={`text-[10px] font-mono font-extrabold px-2 py-0.5 rounded-full ${activeTab === 'categories' ? 'bg-white text-brand-orange' : 'bg-orange-500 text-white'}`}>
+                  <span className={`text-[10px] font-mono font-extrabold px-1.5 md:px-2 py-0.5 rounded-full ${activeTab === 'categories' ? 'bg-white text-brand-orange' : 'bg-orange-500 text-white'}`}>
                     {storeCategories.length}
                   </span>
                 </button>
               )}
 
-              <div className="px-3 py-1.5 pt-3 text-[11px] uppercase font-mono font-extrabold text-blue-400 tracking-wider bg-slate-900/90 rounded-lg border border-blue-400/20 shadow-xs flex items-center justify-between">
+              <div className="hidden md:flex px-3 py-1.5 pt-3 text-[11px] uppercase font-mono font-extrabold text-blue-400 tracking-wider bg-slate-900/90 rounded-lg border border-blue-400/20 shadow-xs items-center justify-between">
                 <span>Registos de Clientes</span>
                 <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
               </div>
@@ -1778,18 +1787,18 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.viewQuotes) && (
                 <button
                   onClick={() => setActiveTab('quotes')}
-                  className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                  className={`shrink-0 md:w-full flex items-center justify-between space-x-2 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
                     activeTab === 'quotes' 
                       ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
                       : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
                   }`}
                 >
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2 md:space-x-3">
                     <FileText className={`w-4.5 h-4.5 ${activeTab === 'quotes' ? 'text-white' : 'text-amber-400'}`} />
                     <span>Pedidos de Orçamento</span>
                   </div>
                   {quotes.length > 0 && (
-                    <span className={`text-[10px] font-mono font-extrabold px-2 py-0.5 rounded-full ${activeTab === 'quotes' ? 'bg-white text-brand-orange' : 'bg-brand-orange text-white'}`}>
+                    <span className={`text-[10px] font-mono font-extrabold px-1.5 md:px-2 py-0.5 rounded-full ${activeTab === 'quotes' ? 'bg-white text-brand-orange' : 'bg-brand-orange text-white'}`}>
                       {quotes.length}
                     </span>
                   )}
@@ -1799,7 +1808,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editPortfolio) && (
                 <button
                   onClick={() => setActiveTab('testimonials')}
-                  className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
                     activeTab === 'testimonials' 
                       ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
                       : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
@@ -1813,7 +1822,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.role === 'staff') && (
                 <button
                   onClick={() => setActiveTab('comercial')}
-                  className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
                     activeTab === 'comercial' 
                       ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-[0_10px_25px_rgba(16,185,129,0.35)] border-emerald-400/40 scale-[1.02]' 
                       : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
@@ -1824,7 +1833,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                 </button>
               )}
 
-              <div className="px-3 py-1.5 pt-3 text-[11px] uppercase font-mono font-extrabold text-purple-400 tracking-wider bg-slate-900/90 rounded-lg border border-purple-400/20 shadow-xs flex items-center justify-between">
+              <div className="hidden md:flex px-3 py-1.5 pt-3 text-[11px] uppercase font-mono font-extrabold text-purple-400 tracking-wider bg-slate-900/90 rounded-lg border border-purple-400/20 shadow-xs items-center justify-between">
                 <span>Definições & Gestão</span>
                 <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
               </div>
@@ -1832,7 +1841,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.role === 'superadmin' || currentAdmin.permissions.manageAdmins) && (
                 <button
                   onClick={() => setActiveTab('admins')}
-                  className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
                     activeTab === 'admins' 
                       ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
                       : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
@@ -1846,7 +1855,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.role === 'superadmin') && (
                 <button
                   onClick={() => setActiveTab('security')}
-                  className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
                     activeTab === 'security' 
                       ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
                       : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'

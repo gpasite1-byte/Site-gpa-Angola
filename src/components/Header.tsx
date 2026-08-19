@@ -47,8 +47,8 @@ export default function Header({ onOpenQuoteCalculator, onScrollToSection, activ
       id="main-header"
       className={`fixed top-0 left-0 w-full z-40 transition-all duration-500 ${
         isScrolled
-          ? 'bg-white/90 backdrop-blur-xl shadow-[0_12px_40px_rgba(15,23,42,0.08)] py-3 text-slate-800 border-b border-slate-200/70'
-          : 'bg-gradient-to-b from-slate-950/85 via-slate-950/45 to-transparent backdrop-blur-sm py-4 text-slate-800'
+          ? 'bg-white/95 backdrop-blur-xl shadow-[0_12px_40px_rgba(15,23,42,0.08)] py-3 text-slate-800 border-b border-slate-200/70'
+          : 'bg-gradient-to-b from-slate-950/95 via-slate-950/70 to-transparent backdrop-blur-md py-4 text-white'
       }`}
     >
       <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -60,7 +60,7 @@ export default function Header({ onOpenQuoteCalculator, onScrollToSection, activ
             onClick={() => handleNavClick('home')}
           >
             <motion.div 
-              className="relative flex items-center justify-start w-48 h-14 sm:w-64 sm:h-18 md:w-80 md:h-22 lg:w-[420px] lg:h-28 bg-transparent"
+              className="relative flex items-center justify-start w-40 h-12 sm:w-56 sm:h-16 md:w-72 md:h-20 lg:w-[400px] lg:h-26 bg-transparent"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
@@ -79,17 +79,17 @@ export default function Header({ onOpenQuoteCalculator, onScrollToSection, activ
                 }}
               />
               
-              {/* Main logo image com animação de flutuação */}
+              {/* Main logo image */}
               <motion.img
                 src={logoUrl || "https://i.ibb.co/v6FWV57q/LOGO-GPA.png"}
                 alt="GPA Angola"
                 className="relative w-full h-full object-contain object-left"
                 referrerPolicy="no-referrer"
                 animate={{
-                  y: [0, -12, 0],
+                  y: [0, -8, 0],
                   filter: [
                     "drop-shadow(0 10px 25px rgba(17,13,34,0.1))",
-                    "drop-shadow(0 25px 50px rgba(245,158,11,0.3))",
+                    "drop-shadow(0 20px 40px rgba(245,158,11,0.3))",
                     "drop-shadow(0 10px 25px rgba(17,13,34,0.1))"
                   ]
                 }}
@@ -98,22 +98,6 @@ export default function Header({ onOpenQuoteCalculator, onScrollToSection, activ
                   repeat: Infinity,
                   ease: "easeInOut"
                 }}
-              />
-              
-              {/* Shine effect que aparece e desaparece */}
-              <motion.div
-                className="absolute inset-0 rounded-3xl bg-gradient-to-r from-transparent via-white to-transparent opacity-0"
-                animate={{
-                  opacity: [0, 0.4, 0],
-                  x: [-200, 200, -200]
-                }}
-                transition={{
-                  duration: 3,
-                  repeat: Infinity,
-                  delay: 2,
-                  ease: "easeInOut"
-                }}
-                style={{ pointerEvents: 'none' }}
               />
             </motion.div>
           </div>
@@ -128,8 +112,8 @@ export default function Header({ onOpenQuoteCalculator, onScrollToSection, activ
                   activeSection === item.id
                     ? 'text-brand-orange font-extrabold'
                     : isScrolled
-                    ? 'text-slate-600 hover:text-brand-orange'
-                    : 'md:text-slate-600 hover:text-brand-orange text-slate-500'
+                    ? 'text-slate-700 hover:text-brand-orange font-bold'
+                    : 'text-slate-100 hover:text-brand-orange font-bold drop-shadow-sm'
                 }`}
               >
                 {item.label}
@@ -148,81 +132,79 @@ export default function Header({ onOpenQuoteCalculator, onScrollToSection, activ
             >
               <button
                 onClick={() => setIsContactsDropdownOpen(!isContactsDropdownOpen)}
-                className={`flex items-center space-x-2.5 px-4 py-2.5 rounded-full border transition-all duration-300 cursor-pointer whitespace-nowrap flex-shrink-0 ${
+                className={`flex items-center space-x-2 text-xs font-mono font-bold tracking-wider uppercase py-2 px-3.5 rounded-xl transition-all cursor-pointer border ${
                   isScrolled
-                    ? 'bg-white/90 border-white/70 text-slate-800 shadow-[0_16px_36px_rgba(15,23,42,0.08)] hover:border-brand-orange/40'
-                    : 'bg-white/70 border-white/50 text-slate-800 shadow-[0_18px_38px_rgba(15,23,42,0.08)] backdrop-blur-md hover:border-brand-orange/40'
+                    ? 'bg-slate-100 text-slate-800 border-slate-200 hover:border-brand-orange/40 hover:bg-brand-orange/5'
+                    : 'bg-white/10 text-white border-white/20 hover:bg-white/20 hover:border-brand-orange/60 backdrop-blur-md'
                 }`}
               >
-                <div className="p-1.5 rounded-full bg-gradient-to-br from-brand-orange to-amber-400 text-white shadow-[0_8px_18px_rgba(245,158,11,0.32)] flex-shrink-0">
-                  <Phone className="w-3.5 h-3.5" />
-                </div>
-                <div className="flex items-center space-x-1.5 whitespace-nowrap flex-shrink-0">
-                  <span className="text-[9px] uppercase font-mono text-slate-500 font-black tracking-[0.18em] whitespace-nowrap">Contacto:</span>
-                  <span className="font-mono text-xs font-bold text-slate-800 whitespace-nowrap">
-                    {companyPhones && companyPhones.length > 0 ? companyPhones[0] : '+244 945 119 409'}
-                  </span>
-                </div>
-                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-300 ${isContactsDropdownOpen ? 'rotate-180 text-brand-orange' : ''}`} />
+                <Phone className="w-3.5 h-3.5 text-brand-orange" />
+                <span>Contactos</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isContactsDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
+              {/* Contacts Dropdown */}
               {isContactsDropdownOpen && (
-                <div className="absolute right-0 top-full mt-2 w-80 bg-white/95 border border-slate-200/80 rounded-3xl shadow-[0_22px_60px_rgba(15,23,42,0.14)] p-4 z-50 backdrop-blur-xl">
-                  <div className="space-y-3.5">
-                    <div className="border-b border-slate-100 pb-2">
-                      <span className="text-[10px] uppercase font-mono text-brand-orange font-black tracking-[0.2em] block">GPA Angola</span>
-                      <span className="text-[9px] text-slate-500 block mt-0.5">Clique para ligar ou abrir WhatsApp direto</span>
-                    </div>
+                <div className="absolute right-0 top-full mt-2 w-72 bg-slate-900/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-slate-800 p-3 space-y-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <span className="text-[10px] font-mono font-extrabold uppercase tracking-[0.2em] text-amber-400 block px-2 pt-1">
+                    Linhas Diretas GPA
+                  </span>
+                  {(() => {
+                    const labels = ["Comercial", "Orçamentos", "Produção", "Geral"];
+                    const phones = companyPhones && companyPhones.length > 0
+                      ? companyPhones
+                      : ['+244 945 119 409', '+244 933 417 569', '+244 953 979 343', '+244 994 943 828'];
 
-                    <div className="space-y-2">
-                      {(() => {
-                        const labels = ["Departamento Comercial", "Gestão de Orçamentos", "Apoio e Produção", "Direção Geral"];
-                        const phones = companyPhones && companyPhones.length > 0
-                          ? companyPhones
-                          : ['+244 945 119 409', '+244 933 417 569', '+244 953 979 343', '+244 994 943 828'];
-
-                        return phones.map((phone, idx) => {
-                          const cleaned = phone.replace(/\s+/g, '');
-                          const label = labels[idx] || "Linha de Atendimento";
-                          return (
-                            <div key={phone} className="flex items-center justify-between p-2 rounded-2xl hover:bg-slate-50 transition-colors group/item">
-                              <div className="text-left">
-                                <span className="text-[9px] uppercase font-mono text-slate-400 font-bold block">{label}</span>
-                                <span className="text-xs font-mono font-bold text-slate-800">{phone}</span>
-                              </div>
-                              <div className="flex items-center space-x-1.5">
-                                <a
-                                  href={`tel:${cleaned}`}
-                                  className="p-1.5 rounded-lg bg-slate-100 hover:bg-brand-orange hover:text-white text-slate-600 transition-colors"
-                                  title={`Ligar para ${label}`}
-                                >
-                                  <Phone className="w-3.5 h-3.5" />
-                                </a>
-                                <a
-                                  href={`https://wa.me/${cleaned.replace('+', '').replace(/\s+/g, '')}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="p-1.5 rounded-lg bg-emerald-50 hover:bg-whatsapp-official hover:text-white text-whatsapp-official transition-colors"
-                                  title={`Mensagem para ${label}`}
-                                >
-                                  <MessageSquare className="w-3.5 h-3.5" />
-                                </a>
-                              </div>
-                            </div>
-                          );
-                        });
-                      })()}
-                    </div>
-                  </div>
+                    return phones.map((phone, idx) => {
+                      const cleaned = phone.replace(/\s+/g, '');
+                      const label = labels[idx] || "Atendimento";
+                      return (
+                        <div key={phone} className="flex items-center justify-between p-2 rounded-xl bg-slate-950/80 border border-slate-800 hover:border-brand-orange/40 transition-colors group">
+                          <div>
+                            <span className="text-[9px] uppercase font-mono text-slate-400 font-bold block">{label}</span>
+                            <span className="text-xs font-mono font-bold text-white group-hover:text-brand-orange transition-colors">{phone}</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <a
+                              href={`tel:${cleaned}`}
+                              className="p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-brand-orange transition-colors"
+                              title="Ligar"
+                            >
+                              <Phone className="w-3 h-3" />
+                            </a>
+                            <a
+                              href={`https://wa.me/${cleaned.replace('+', '').replace(/\s+/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all"
+                              title="WhatsApp"
+                            >
+                              <MessageSquare className="w-3 h-3" />
+                            </a>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
               )}
             </div>
+
+            <button
+              onClick={onOpenQuoteCalculator}
+              className="bg-gradient-to-r from-brand-orange to-amber-500 hover:brightness-110 text-white text-xs font-bold uppercase tracking-wider py-2.5 px-4 rounded-xl shadow-[0_10px_25px_rgba(245,158,11,0.35)] flex items-center space-x-2 cursor-pointer transition-all transform hover:scale-[1.02]"
+            >
+              <Calculator className="w-4 h-4" />
+              <span>Simular Preço</span>
+              <ArrowRight className="w-3.5 h-3.5 opacity-70" />
+            </button>
           </div>
 
+          {/* MOBILE TOGGLE & ACTION */}
           <div className="lg:hidden flex items-center space-x-2">
             <button
               onClick={onOpenQuoteCalculator}
-              className="sm:hidden p-2 rounded-full bg-gradient-to-r from-brand-orange to-amber-400 text-white shadow-[0_12px_24px_rgba(245,158,11,0.3)] cursor-pointer"
+              className="p-2.5 rounded-xl bg-gradient-to-r from-brand-orange to-amber-400 text-white shadow-[0_10px_20px_rgba(245,158,11,0.35)] cursor-pointer active:scale-95"
               title="Solicitar Orçamento"
             >
               <Calculator className="w-4.5 h-4.5" />
@@ -231,8 +213,10 @@ export default function Header({ onOpenQuoteCalculator, onScrollToSection, activ
             <button
               id="mobile-menu-toggle"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className={`p-2 rounded-lg transition-colors cursor-pointer ${
-                isScrolled ? 'text-slate-800 hover:bg-slate-100' : 'md:text-slate-800 hover:bg-slate-100 text-slate-800'
+              className={`p-2.5 rounded-xl transition-all cursor-pointer border ${
+                isScrolled 
+                  ? 'text-slate-800 bg-slate-100 border-slate-200 hover:bg-slate-200' 
+                  : 'text-white bg-slate-900/80 border-slate-800 hover:bg-slate-800'
               }`}
             >
               {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -245,28 +229,28 @@ export default function Header({ onOpenQuoteCalculator, onScrollToSection, activ
       {isMobileMenuOpen && (
         <div
           id="mobile-drawer"
-          className="lg:hidden absolute top-full left-0 w-full bg-white/90 backdrop-blur-xl shadow-[0_18px_40px_rgba(15,23,42,0.12)] border-t border-slate-200/80 py-4 px-6"
+          className="lg:hidden absolute top-full left-0 w-full bg-slate-950/98 backdrop-blur-2xl shadow-[0_25px_50px_rgba(0,0,0,0.7)] border-t border-slate-800 py-5 px-6 max-h-[85vh] overflow-y-auto"
         >
-          <div className="flex flex-col space-y-3">
+          <div className="flex flex-col space-y-2">
             {navItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => handleNavClick(item.id)}
-                className={`w-full text-left py-2.5 px-3 rounded-xl text-sm font-medium transition-colors ${
+                className={`w-full text-left py-3 px-4 rounded-xl text-sm font-bold transition-all cursor-pointer border ${
                   activeSection === item.id
-                    ? 'bg-brand-orange/10 text-brand-orange font-bold'
-                    : 'text-slate-600 hover:bg-slate-50'
+                    ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white border-amber-400/40 shadow-lg'
+                    : 'text-slate-100 bg-slate-900/70 border-slate-800/80 hover:bg-slate-800 hover:text-white'
                 }`}
               >
                 {item.label}
               </button>
             ))}
 
-            <div className="border-t border-slate-100 pt-4 mt-2 space-y-2">
-              <span className="text-[10px] font-mono font-extrabold uppercase tracking-[0.2em] text-slate-400 block px-3">
-                Canais de Atendimento
+            <div className="border-t border-slate-800/80 pt-4 mt-3 space-y-2.5">
+              <span className="text-[10px] font-mono font-extrabold uppercase tracking-[0.2em] text-amber-400 block px-2">
+                Linhas Diretas de Atendimento
               </span>
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {(() => {
                   const labels = ["Comercial", "Orçamentos", "Produção", "Geral"];
                   const phones = companyPhones && companyPhones.length > 0
@@ -277,15 +261,15 @@ export default function Header({ onOpenQuoteCalculator, onScrollToSection, activ
                     const cleaned = phone.replace(/\s+/g, '');
                     const label = labels[idx] || "Atendimento";
                     return (
-                      <div key={phone} className="flex items-center justify-between py-1.5 px-3 rounded-xl bg-slate-50 border border-slate-100/50">
+                      <div key={phone} className="flex items-center justify-between py-2 px-3.5 rounded-xl bg-slate-900 border border-slate-800">
                         <div className="text-left">
                           <span className="text-[9px] uppercase font-mono text-slate-400 font-bold block">{label}</span>
-                          <span className="text-xs font-mono font-bold text-slate-800">{phone}</span>
+                          <span className="text-xs font-mono font-bold text-white">{phone}</span>
                         </div>
-                        <div className="flex items-center space-x-1.5">
+                        <div className="flex items-center space-x-2">
                           <a
                             href={`tel:${cleaned}`}
-                            className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-brand-orange transition-colors"
+                            className="p-2 rounded-lg bg-slate-800 border border-slate-700 text-white hover:text-brand-orange transition-colors"
                           >
                             <Phone className="w-3.5 h-3.5" />
                           </a>
@@ -293,7 +277,7 @@ export default function Header({ onOpenQuoteCalculator, onScrollToSection, activ
                             href={`https://wa.me/${cleaned.replace('+', '').replace(/\s+/g, '')}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-1.5 rounded-lg bg-emerald-50 text-whatsapp-official hover:bg-whatsapp-official hover:text-white transition-colors"
+                            className="p-2 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-colors"
                           >
                             <MessageSquare className="w-3.5 h-3.5" />
                           </a>
