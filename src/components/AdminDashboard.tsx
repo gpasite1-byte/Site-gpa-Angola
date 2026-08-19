@@ -1620,7 +1620,40 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               </button>
             </form>
 
-            <div className="mt-8 pt-6 border-t border-white/5 text-center">
+            {/* QUICK PRE-SET ACCOUNTS SELECTOR */}
+            <div className="mt-5 pt-4 border-t border-white/10 space-y-2">
+              <span className="text-[10px] font-mono uppercase font-bold text-amber-400 block text-center">
+                Acesso Rápido para a Equipa GPA
+              </span>
+              <div className="grid grid-cols-3 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => { setLoginUsername('admin'); setPasscode('gpa2026'); }}
+                  className="bg-slate-950/80 hover:bg-slate-800 border border-amber-400/20 hover:border-amber-400/60 p-2 rounded-xl text-center cursor-pointer transition-all"
+                >
+                  <span className="text-[10px] font-bold text-amber-400 block">Principal</span>
+                  <span className="text-[9px] font-mono text-slate-400">admin</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setLoginUsername('gestor'); setPasscode('gpa2026'); }}
+                  className="bg-slate-950/80 hover:bg-slate-800 border border-blue-400/20 hover:border-blue-400/60 p-2 rounded-xl text-center cursor-pointer transition-all"
+                >
+                  <span className="text-[10px] font-bold text-blue-400 block">Gestor Apoio</span>
+                  <span className="text-[9px] font-mono text-slate-400">gestor</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setLoginUsername('comercial 1'); setPasscode('dtp'); }}
+                  className="bg-slate-950/80 hover:bg-slate-800 border border-emerald-400/20 hover:border-emerald-400/60 p-2 rounded-xl text-center cursor-pointer transition-all"
+                >
+                  <span className="text-[10px] font-bold text-emerald-400 block">Comercial</span>
+                  <span className="text-[9px] font-mono text-slate-400">comercial 1</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-white/5 text-center">
               <span className="text-[10px] text-slate-500 font-mono">
                 GPA Angola • Produção Industrial Gráfica e Têxtil em Luanda
               </span>
@@ -4499,6 +4532,34 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                   </motion.div>
                 )}
 
+                {/* CO-ADMIN DELEGATION BANNER */}
+                <div className="bg-gradient-to-r from-blue-950/80 via-slate-900 to-indigo-950/80 border border-blue-500/30 rounded-2xl p-5 shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center space-x-2">
+                      <span className="bg-blue-500 text-white text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-full">
+                        Acesso Imediato
+                      </span>
+                      <h3 className="text-sm font-display font-bold text-white">
+                        Conta de Apoio Pré-Configurada (Gestor)
+                      </h3>
+                    </div>
+                    <p className="text-xs text-slate-300">
+                      O seu colega pode aceder ao painel imediatamente com <strong className="text-amber-400">utilizador: gestor</strong> e <strong className="text-amber-400">código: gpa2026</strong>.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const msg = `*Acesso de Gestão - GPA Angola* 🚀\n🔗 Link: ${window.location.origin}\n👤 Utilizador: gestor\n🔑 Código: gpa2026`;
+                      window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2.5 px-4 rounded-xl flex items-center space-x-2 shadow-md cursor-pointer transition-all shrink-0"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    <span>Enviar Dados por WhatsApp</span>
+                  </button>
+                </div>
+
                 {/* ADMINS LIST */}
                 <div className="bg-slate-900 border border-white/10 rounded-2xl overflow-hidden">
                   <div className="px-6 py-4 border-b border-white/5 bg-slate-900/55 flex justify-between items-center">
@@ -4548,6 +4609,11 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                               </span>
                             )}
 
+                            {/* Passcode preview */}
+                            <span className="text-[10px] font-mono bg-slate-950 px-2 py-0.5 rounded border border-white/5 text-amber-400">
+                              Código: {adm.passcode || 'gpa2026'}
+                            </span>
+
                             {/* Permissions list summary */}
                             <span className="text-[10px] text-slate-500">
                               | Permissões: {
@@ -4576,25 +4642,39 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                           </div>
                         </div>
 
-                        {adm.id !== 'admin' && (
-                          <div className="flex items-center space-x-2">
-                            <button
-                              type="button"
-                              onClick={() => handleEditAdminClick(adm)}
-                              className="bg-slate-800 hover:bg-slate-750 text-white font-semibold py-1.5 px-3 rounded-lg text-xs transition-colors cursor-pointer"
-                            >
-                              Editar
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteAdmin(adm.id, adm.name)}
-                              className="bg-red-950/40 hover:bg-red-900/60 border border-red-900/40 text-red-400 hover:text-white p-1.5 rounded-lg transition-colors cursor-pointer"
-                              title="Remover Administrador"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        )}
+                        <div className="flex items-center space-x-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const msg = `*Acesso de Gestão - GPA Angola* 🚀\n🔗 Link: ${window.location.origin}\n👤 Utilizador: ${adm.username}\n🔑 Código: ${adm.passcode || 'gpa2026'}`;
+                              window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+                            }}
+                            className="bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-400 hover:text-white py-1.5 px-2.5 rounded-lg text-xs transition-colors cursor-pointer flex items-center space-x-1"
+                            title="Partilhar Dados de Acesso via WhatsApp"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Enviar WhatsApp</span>
+                          </button>
+                          {adm.id !== 'admin' && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleEditAdminClick(adm)}
+                                className="bg-slate-800 hover:bg-slate-750 text-white font-semibold py-1.5 px-3 rounded-lg text-xs transition-colors cursor-pointer"
+                              >
+                                Editar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteAdmin(adm.id, adm.name)}
+                                className="bg-red-950/40 hover:bg-red-900/60 border border-red-900/40 text-red-400 hover:text-white p-1.5 rounded-lg transition-colors cursor-pointer"
+                                title="Remover Administrador"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>

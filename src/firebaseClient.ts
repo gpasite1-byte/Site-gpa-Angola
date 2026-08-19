@@ -151,6 +151,7 @@ export interface SiteConfig {
   productMinQtys?: Record<string, number>;
   productImages?: Record<string, string>;
   imgbbApiKey?: string;
+  adminUsers?: AdminUser[];
 }
 
 const DEFAULT_CONFIG: SiteConfig = {
@@ -821,6 +822,31 @@ export const DEFAULT_ADMIN_USERS: AdminUser[] = [
     isOnline: true
   },
   {
+    id: 'gestor',
+    username: 'gestor',
+    passcode: 'gpa2026',
+    name: 'Gestor Auxiliar (Apoio)',
+    role: 'superadmin',
+    status: 'active',
+    permissions: {
+      editGeneral: true,
+      editProducts: true,
+      editPartners: true,
+      editPortfolio: true,
+      editGallery: true,
+      viewQuotes: true,
+      manageAdmins: true,
+      canManageConfig: true,
+      canManageProducts: true,
+      canManageCategories: true,
+      canManageServices: true,
+      canManageGallery: true,
+      canManageQuotes: true,
+      canManageUsers: true
+    },
+    isOnline: true
+  },
+  {
     id: 'comercial 1',
     username: 'comercial 1',
     passcode: 'dtp',
@@ -849,44 +875,55 @@ export async function getAdminUsers(): Promise<AdminUser[]> {
   const fetchPromise = (async () => {
     let list: AdminUser[] = [];
 
-    // 1. Try reading the centralized admin registry from CONFIG_COLLECTION (always accessible)
+    // 1. Primary Source: read adminUsers array from general_settings (always synchronized with site config)
     try {
-      const regRef = doc(db, CONFIG_COLLECTION, 'admin_users_registry');
-      const snapReg = await getDoc(regRef);
-      if (snapReg.exists() && Array.isArray(snapReg.data()?.users)) {
-        list = snapReg.data()?.users as AdminUser[];
+      const configRef = doc(db, CONFIG_COLLECTION, 'general_settings');
+      const snapConfig = await getDoc(configRef);
+      if (snapConfig.exists() && Array.isArray(snapConfig.data()?.adminUsers) && snapConfig.data()?.adminUsers.length > 0) {
+        list = snapConfig.data()?.adminUsers as AdminUser[];
       }
     } catch (e) {
-      console.warn('Could not read admin_users_registry:', e);
+      console.warn('Could not read adminUsers from general_settings:', e);
     }
 
-    // 2. Try reading individual documents from ADMIN_USERS_COLLECTION
+    // 2. Secondary Source: read from admin_users_registry
+    if (list.length === 0) {
+      try {
+        const regRef = doc(db, CONFIG_COLLECTION, 'admin_users_registry');
+        const snapReg = await getDoc(regRef);
+        if (snapReg.exists() && Array.isArray(snapReg.data()?.users) && snapReg.data()?.users.length > 0) {
+          list = snapReg.data()?.users as AdminUser[];
+        }
+      } catch (e) {}
+    }
+
+    // 3. Tertiary Source: read individual documents from ADMIN_USERS_COLLECTION
     try {
       const snap = await getDocs(collection(db, ADMIN_USERS_COLLECTION));
       snap.forEach((d) => {
         const item = { id: d.id, ...d.data() } as AdminUser;
-        if (!list.some(u => u.username?.toLowerCase().trim() === item.username?.toLowerCase().trim())) {
+        if (!list.some(u => u.username?.toLowerCase().trim().replace(/^@/, '') === item.username?.toLowerCase().trim().replace(/^@/, ''))) {
           list.push(item);
         }
       });
-    } catch (e) {
-      console.warn('Could not read ADMIN_USERS_COLLECTION:', e);
-    }
+    } catch (e) {}
 
+    // Ensure defaults exist if list is empty or missing admin / gestor
     if (list.length === 0) {
-      return fallback.length > 0 ? fallback : DEFAULT_ADMIN_USERS;
-    }
-
-    // Ensure default master admin exists
-    const hasAnyOwner = list.some(u => u.role === 'owner' || u.role === 'superadmin');
-    if (!hasAnyOwner && !list.some(u => u.username?.toLowerCase().trim() === 'admin')) {
-      list.unshift(DEFAULT_ADMIN_USERS[0]);
+      list = [...DEFAULT_ADMIN_USERS];
+    } else {
+      if (!list.some(u => u.username?.toLowerCase().trim() === 'admin')) {
+        list.unshift(DEFAULT_ADMIN_USERS[0]);
+      }
+      if (!list.some(u => u.username?.toLowerCase().trim() === 'gestor')) {
+        list.splice(1, 0, DEFAULT_ADMIN_USERS[1]);
+      }
     }
 
     return list;
   })();
 
-  const result = await withTimeout(fetchPromise, 4000, fallback);
+  const result = await withTimeout(fetchPromise, 3500, fallback);
   if (result && result.length > 0) {
     try {
       localStorage.setItem('gpa_cached_admin_users', JSON.stringify(result));
@@ -929,22 +966,27 @@ export async function saveAdminUser(user: AdminUser): Promise<AdminUser> {
     console.warn('LocalStorage save error:', e);
   }
 
-  // 2. Persist to Firestore individual doc
+  // 2. Persist directly inside general_settings (100% reliable across all clients and devices)
   try {
-    const docRef = doc(db, ADMIN_USERS_COLLECTION, cleanUsername);
-    await setDoc(docRef, userToSave, { merge: true });
+    const configRef = doc(db, CONFIG_COLLECTION, 'general_settings');
+    const usersToSave = updatedList.length > 0 ? updatedList : [userToSave];
+    await setDoc(configRef, { adminUsers: usersToSave }, { merge: true });
   } catch (err) {
-    console.warn('Firestore saveAdminUser doc falhou/offline:', err);
+    console.warn('Firestore general_settings adminUsers save error:', err);
   }
 
-  // 3. Persist to central registry under CONFIG_COLLECTION (always synced)
+  // 3. Persist to central registry doc
   try {
     const regRef = doc(db, CONFIG_COLLECTION, 'admin_users_registry');
     const usersToReg = updatedList.length > 0 ? updatedList : [userToSave];
     await setDoc(regRef, { users: usersToReg, updatedAt: new Date().toISOString() }, { merge: true });
-  } catch (err) {
-    console.warn('Firestore saveAdminUser registry falhou/offline:', err);
-  }
+  } catch (err) {}
+
+  // 4. Persist to individual collection doc
+  try {
+    const docRef = doc(db, ADMIN_USERS_COLLECTION, cleanUsername);
+    await setDoc(docRef, userToSave, { merge: true });
+  } catch (err) {}
 
   return userToSave;
 }
@@ -953,7 +995,6 @@ export async function saveAdminUser(user: AdminUser): Promise<AdminUser> {
 export async function deleteAdminUser(id: string): Promise<void> {
   const cleanId = id.toLowerCase().trim().replace(/^@/, '');
 
-  // 1. Immediately delete from LocalStorage
   let updatedList: AdminUser[] = [];
   try {
     const cached = localStorage.getItem('gpa_cached_admin_users');
@@ -964,19 +1005,25 @@ export async function deleteAdminUser(id: string): Promise<void> {
     }
   } catch (e) {}
 
-  // 2. Delete from Firestore individual doc
+  // Update in general_settings
   try {
-    await deleteDoc(doc(db, ADMIN_USERS_COLLECTION, cleanId));
-  } catch (err) {
-    console.warn('Firestore deleteAdminUser falhou/offline:', err);
-  }
+    const configRef = doc(db, CONFIG_COLLECTION, 'general_settings');
+    if (updatedList.length > 0) {
+      await setDoc(configRef, { adminUsers: updatedList }, { merge: true });
+    }
+  } catch (err) {}
 
-  // 3. Update central registry
+  // Update in registry
   try {
     const regRef = doc(db, CONFIG_COLLECTION, 'admin_users_registry');
     if (updatedList.length > 0) {
       await setDoc(regRef, { users: updatedList, updatedAt: new Date().toISOString() }, { merge: true });
     }
+  } catch (err) {}
+
+  // Delete individual doc
+  try {
+    await deleteDoc(doc(db, ADMIN_USERS_COLLECTION, cleanId));
   } catch (err) {}
 }
 
@@ -986,55 +1033,14 @@ export async function verifyAdminLogin(username: string, passcode: string): Prom
   const normalizedUsername = rawUsername.toLowerCase().replace(/^@/, '');
   const cleanPasscode = (passcode || '').trim();
 
-  // Master credentials shortcut
+  // Master & Pre-configured shortcuts
   const isMasterPasscode = ['gpa2026', 'admin@gpa', 'gpa'].includes(cleanPasscode);
   const isMasterUser = normalizedUsername === 'admin' || normalizedUsername === 'gpa2026' || normalizedUsername === '';
+  const isGestorUser = normalizedUsername === 'gestor';
 
-  const defaultMasterUser: AdminUser = {
-    id: 'admin',
-    username: 'admin',
-    passcode: 'gpa2026',
-    name: 'Administrador Principal',
-    role: 'owner',
-    status: 'active',
-    permissions: {
-      editGeneral: true,
-      editProducts: true,
-      editPartners: true,
-      editPortfolio: true,
-      editGallery: true,
-      viewQuotes: true,
-      manageAdmins: true,
-      canManageConfig: true,
-      canManageProducts: true,
-      canManageCategories: true,
-      canManageServices: true,
-      canManageGallery: true,
-      canManageQuotes: true,
-      canManageUsers: true,
-    },
-    isOnline: true
-  };
-
-  const defaultCommercialUser: AdminUser = {
-    id: 'comercial 1',
-    username: 'comercial 1',
-    passcode: 'dtp',
-    name: 'Comercial 1',
-    role: 'staff',
-    status: 'active',
-    permissions: {
-      editGeneral: false,
-      editProducts: false,
-      editPartners: false,
-      editPortfolio: false,
-      editGallery: false,
-      viewQuotes: true,
-      manageAdmins: false
-    },
-    whatsappNumber: '+244 994 943 828',
-    isOnline: true
-  };
+  const defaultMasterUser = DEFAULT_ADMIN_USERS[0];
+  const defaultGestorUser = DEFAULT_ADMIN_USERS[1];
+  const defaultCommercialUser = DEFAULT_ADMIN_USERS[2];
 
   // Helper to match a user object (username, fullname, id, or role)
   const checkUserMatch = (u: AdminUser): boolean => {
@@ -1048,29 +1054,31 @@ export async function verifyAdminLogin(username: string, passcode: string): Prom
       uUser === target || 
       uName === target || 
       uId === target ||
-      (target === 'admin' && (u.role === 'owner' || u.role === 'superadmin'));
+      (target === 'admin' && (u.role === 'owner' || u.role === 'superadmin')) ||
+      (target === 'gestor' && (u.role === 'superadmin' || u.username === 'gestor'));
 
     const passcodeMatches = 
       String(u.passcode || '').trim() === cleanPasscode || 
-      (isMasterUser && isMasterPasscode);
+      (isMasterUser && isMasterPasscode) ||
+      (isGestorUser && cleanPasscode === 'gpa2026');
 
     return usernameMatches && passcodeMatches;
   };
 
-  // Fallback helper to match strictly by passcode if username was omitted, mistyped, or defaulted
+  // Fallback helper to match strictly by passcode if username was omitted or defaulted
   const checkPasscodeOnlyMatch = (u: AdminUser): boolean => {
     if (!u || !u.passcode) return false;
     return String(u.passcode).trim() === cleanPasscode;
   };
 
   try {
-    // 1. Check cached LocalStorage users immediately (fastest, works offline)
+    // 1. Check cached LocalStorage users immediately (0ms)
     const cached = localStorage.getItem('gpa_cached_admin_users');
     let localList: AdminUser[] = [];
     if (cached) {
       try {
         localList = JSON.parse(cached);
-        const localMatch = localList.find(checkUserMatch) || localList.find(checkPasscodeOnlyMatch);
+        const localMatch = localList.find(checkUserMatch) || (cleanPasscode && localList.find(checkPasscodeOnlyMatch));
         if (localMatch) {
           const result = await handleAdminStatusAndExpiry(localMatch);
           if (result.success && result.user) {
@@ -1081,10 +1089,10 @@ export async function verifyAdminLogin(username: string, passcode: string): Prom
       } catch (e) {}
     }
 
-    // 2. Query all users from Firestore (via central registry & docs)
+    // 2. Query all users from Firestore (via general_settings & registries)
     try {
       const allAdmins = await getAdminUsers();
-      const matched = allAdmins.find(checkUserMatch) || allAdmins.find(checkPasscodeOnlyMatch);
+      const matched = allAdmins.find(checkUserMatch) || (cleanPasscode && allAdmins.find(checkPasscodeOnlyMatch));
       if (matched) {
         const result = await handleAdminStatusAndExpiry(matched);
         if (result.success && result.user) {
@@ -1113,19 +1121,28 @@ export async function verifyAdminLogin(username: string, passcode: string): Prom
       return { success: false, error: 'Código de acesso incorreto.' };
     }
 
-    // 4. Check hardcoded master & default credentials
+    // 4. Check hardcoded master, gestor & staff credentials
     if (isMasterUser && isMasterPasscode) {
       return { success: true, user: defaultMasterUser };
+    }
+    if ((isGestorUser && isMasterPasscode) || (cleanPasscode === 'gpa2026' && normalizedUsername === 'gestor')) {
+      return { success: true, user: defaultGestorUser };
     }
     if ((normalizedUsername === 'comercial 1' || normalizedUsername === 'comercial' || cleanPasscode === 'dtp')) {
       return { success: true, user: defaultCommercialUser };
     }
 
-    return { success: false, error: 'Utilizador ou código de acesso incorretos. Verifique o utilizador e o código que definiu.' };
+    return { 
+      success: false, 
+      error: 'Utilizador ou código de acesso incorretos. Utilize o utilizador predefinido: admin ou gestor com o código: gpa2026.' 
+    };
   } catch (err) {
     console.warn('Firebase login attempt fallback:', err);
     if (isMasterUser && isMasterPasscode) {
       return { success: true, user: defaultMasterUser };
+    }
+    if (isGestorUser && isMasterPasscode) {
+      return { success: true, user: defaultGestorUser };
     }
     if ((normalizedUsername === 'comercial 1' || normalizedUsername === 'comercial' || cleanPasscode === 'dtp')) {
       return { success: true, user: defaultCommercialUser };
