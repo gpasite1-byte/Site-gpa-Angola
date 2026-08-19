@@ -11,13 +11,20 @@ export interface Service {
 }
 
 export interface AdminUserPermissions {
-  canManageConfig: boolean;
-  canManageProducts: boolean;
-  canManageCategories: boolean;
-  canManageServices: boolean;
-  canManageGallery: boolean;
-  canManageQuotes: boolean;
-  canManageUsers: boolean;
+  canManageConfig?: boolean;
+  canManageProducts?: boolean;
+  canManageCategories?: boolean;
+  canManageServices?: boolean;
+  canManageGallery?: boolean;
+  canManageQuotes?: boolean;
+  canManageUsers?: boolean;
+  editGeneral?: boolean;
+  editProducts?: boolean;
+  editPartners?: boolean;
+  editPortfolio?: boolean;
+  editGallery?: boolean;
+  viewQuotes?: boolean;
+  manageAdmins?: boolean;
 }
 
 export interface AdminUser {
@@ -25,11 +32,16 @@ export interface AdminUser {
   name: string;
   username: string;
   passcode: string;
-  role: 'superadmin' | 'gestor_comercial' | 'gestor_produtos' | 'editor_conteudo';
+  role: 'superadmin' | 'gestor_comercial' | 'gestor_produtos' | 'editor_conteudo' | 'owner' | 'staff' | string;
   permissions: AdminUserPermissions;
-  active: boolean;
-  createdAt: string;
+  active?: boolean;
+  createdAt?: string;
   lastLogin?: string;
+  status?: 'active' | 'blocked' | 'silenced' | string;
+  blockExpiresAt?: string | null;
+  silenceExpiresAt?: string | null;
+  whatsappNumber?: string;
+  isOnline?: boolean;
 }
 
 export interface StoreCategory {

@@ -794,30 +794,6 @@ export function subscribePageViews(callback: (views: number) => void): () => voi
 /**
  * --- MULTI-ADMIN SYSTEM ---
  */
-const ADMIN_USERS_COLLECTION = 'gpa_admin_users';
-
-export interface AdminUser {
-  id: string;
-  username: string;
-  passcode: string;
-  name: string;
-  role: 'owner' | 'staff';
-  status: 'active' | 'blocked' | 'silenced';
-  blockExpiresAt?: string | null;
-  silenceExpiresAt?: string | null;
-  permissions: {
-    editGeneral: boolean;
-    editProducts: boolean;
-    editPartners: boolean;
-    editPortfolio: boolean;
-    editGallery: boolean;
-    viewQuotes: boolean;
-    manageAdmins: boolean;
-  };
-  whatsappNumber?: string;
-  isOnline?: boolean;
-}
-
 // Get all admin users from Firestore
 export async function getAdminUsers(): Promise<AdminUser[]> {
   const fetchPromise = (async () => {
