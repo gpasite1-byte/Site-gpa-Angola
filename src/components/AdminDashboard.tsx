@@ -5296,6 +5296,8 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               </form>
             </div>
           </div>
+        )}
+
         {/* CREATE/EDIT ADMIN USER MODAL */}
         {isCreatingAdmin && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
