@@ -357,41 +357,52 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
       }
     } catch (err) {
       console.warn('Login exception, fallback check:', err);
-      const cleanUser = (loginUsername || 'admin').trim().toLowerCase();
+      const cleanUser = (loginUsername || '').trim().toLowerCase().replace(/^@/, '');
       const cleanCode = passcode.trim();
-      if ((cleanUser === 'admin' || !cleanUser) && ['gpa2026', 'admin@gpa', 'gpa'].includes(cleanCode)) {
-        const masterUser: AdminUser = {
-          id: 'admin',
-          username: 'admin',
-          passcode: 'gpa2026',
-          name: 'Administrador Principal',
-          role: 'owner',
-          status: 'active',
-          permissions: {
-            editGeneral: true,
-            editProducts: true,
-            editPartners: true,
-            editPortfolio: true,
-            editGallery: true,
-            viewQuotes: true,
-            manageAdmins: true,
-            canManageConfig: true,
-            canManageProducts: true,
-            canManageCategories: true,
-            canManageServices: true,
-            canManageGallery: true,
-            canManageQuotes: true,
-            canManageUsers: true
-          },
-          isOnline: true
-        };
+
+      // Check cached local users
+      let fallbackUser: AdminUser | null = null;
+      try {
+        const cached = localStorage.getItem('gpa_cached_admin_users');
+        if (cached) {
+          const list: AdminUser[] = JSON.parse(cached);
+          const found = list.find(u => 
+            ((u.username && u.username.toLowerCase().trim().replace(/^@/, '') === cleanUser) || (u.name && u.name.toLowerCase().trim() === cleanUser)) &&
+            (String(u.passcode || '').trim() === cleanCode)
+          );
+          if (found) fallbackUser = found;
+        }
+      } catch (e) {}
+
+      if (fallbackUser) {
+        setIsAuthenticated(true);
+        setCurrentAdmin(fallbackUser);
+        sessionStorage.setItem('gpa_admin_authenticated', 'true');
+        sessionStorage.setItem('gpa_current_admin', JSON.stringify(fallbackUser));
+        loadAllData();
+      } else if ((cleanUser === 'admin' || !cleanUser) && ['gpa2026', 'admin@gpa', 'gpa'].includes(cleanCode)) {
+        const masterUser = DEFAULT_ADMIN_USERS[0];
         setIsAuthenticated(true);
         setCurrentAdmin(masterUser);
         sessionStorage.setItem('gpa_admin_authenticated', 'true');
         sessionStorage.setItem('gpa_current_admin', JSON.stringify(masterUser));
         loadAllData();
+      } else if (cleanUser === 'gestor' && (cleanCode === 'gpa2026' || ['gpa2026', 'admin@gpa'].includes(cleanCode))) {
+        const gestorUser = DEFAULT_ADMIN_USERS[1];
+        setIsAuthenticated(true);
+        setCurrentAdmin(gestorUser);
+        sessionStorage.setItem('gpa_admin_authenticated', 'true');
+        sessionStorage.setItem('gpa_current_admin', JSON.stringify(gestorUser));
+        loadAllData();
+      } else if ((cleanUser === 'comercial 1' || cleanUser === 'comercial') && cleanCode === 'dtp') {
+        const commercialUser = DEFAULT_ADMIN_USERS[2];
+        setIsAuthenticated(true);
+        setCurrentAdmin(commercialUser);
+        sessionStorage.setItem('gpa_admin_authenticated', 'true');
+        sessionStorage.setItem('gpa_current_admin', JSON.stringify(commercialUser));
+        loadAllData();
       } else {
-        setAuthError('Utilizador ou código incorretos. Utilize utilizador: admin, código: gpa2026.');
+        setAuthError('Utilizador ou código incorretos. Utilize utilizador: admin ou gestor, código: gpa2026.');
       }
     } finally {
       setIsVerifying(false);
