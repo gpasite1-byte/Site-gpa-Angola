@@ -290,7 +290,7 @@ export default function App() {
         return (
           <section id="about" className="relative pt-44 sm:pt-52 md:pt-60 lg:pt-64 pb-24 scroll-mt-36 border-t border-white/10 overflow-hidden">
             <div className="absolute inset-0 z-0">
-              <video className="h-full w-full object-cover opacity-25" autoPlay muted loop playsInline>
+              <video className="h-full w-full object-cover opacity-25" autoPlay muted loop playsInline preload="none">
                 <source src="/GPA/Cinematic_D_animation_seaml.mp4" type="video/mp4" />
               </video>
               <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(249,250,252,0.90),rgba(245,247,255,0.96))]" />
@@ -343,7 +343,7 @@ export default function App() {
         return (
           <section id="store" className="relative pt-44 sm:pt-52 md:pt-60 lg:pt-64 pb-24 scroll-mt-36 border-t border-white/10 overflow-hidden">
             <div className="absolute inset-0 z-0">
-              <video className="h-full w-full object-cover opacity-20" autoPlay muted loop playsInline>
+              <video className="h-full w-full object-cover opacity-20" autoPlay muted loop playsInline preload="none">
                 <source src="/GPA/Cinematic_D_animation_seaml.mp4" type="video/mp4" />
               </video>
               <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.90),rgba(250,250,255,0.96))]" />
@@ -413,7 +413,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-hexagon-pattern text-slate-800 selection:bg-brand-orange selection:text-white font-sans antialiased overflow-x-hidden relative">
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-        <video key={videoUrl} className="page-video" autoPlay muted loop playsInline poster="/GPA/Gemini_Generated_Image_2nsofo2nsofo2nso.png">
+        <video key={videoUrl} className="page-video" autoPlay muted loop playsInline poster="/GPA/hero_poster.jpg" preload="metadata">
           <source src={videoUrl} type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(9,10,16,0.72),rgba(18,22,35,0.54),rgba(17,13,34,0.82))]" />

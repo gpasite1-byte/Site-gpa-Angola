@@ -53,18 +53,22 @@ import {
   updateStoreProduct,
   deleteStoreProduct,
   subscribeStoreProducts,
+  getStoreCategories,
+  saveStoreCategory,
+  deleteStoreCategory,
+  getServicesData,
+  saveServiceData,
   SiteConfig,
   Partner,
   GalleryItem,
   getAdminUsers,
   saveAdminUser,
   deleteAdminUser,
-  verifyAdminLogin,
-  AdminUser,
+  verifyAdminUserLogin,
   subscribeAssistantChats
 } from '../firebaseClient';
-import { Testimonial, QuoteRequest, Project, AssistantChatSession, StoreProduct } from '../types';
-import { PROJECTS, DEFAULT_STORE_PRODUCTS } from '../data';
+import { Testimonial, QuoteRequest, Project, AssistantChatSession, StoreProduct, AdminUser, StoreCategory, Service } from '../types';
+import { PROJECTS, DEFAULT_STORE_PRODUCTS, DEFAULT_STORE_CATEGORIES, SERVICES } from '../data';
 
 interface AdminDashboardProps {
   onClose: () => void;
@@ -202,6 +206,36 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
   const [quotes, setQuotes] = useState<QuoteRequest[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [storeProducts, setStoreProducts] = useState<StoreProduct[]>([]);
+  
+  // Store Categories States
+  const [storeCategories, setStoreCategories] = useState<StoreCategory[]>(DEFAULT_STORE_CATEGORIES);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<StoreCategory | null>(null);
+  const [catForm, setCatForm] = useState<StoreCategory>({
+    id: '',
+    name: '',
+    slug: '',
+    description: '',
+    imageUrl: '',
+    iconName: 'Printer',
+    badge: ''
+  });
+
+  // Services States
+  const [servicesList, setServicesList] = useState<Service[]>(SERVICES);
+  const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [serviceForm, setServiceForm] = useState<Service>({
+    id: '',
+    title: '',
+    iconName: 'Printer',
+    description: '',
+    fullDescription: '',
+    features: [],
+    typicalProducts: [],
+    imageUrl: '',
+    badge: ''
+  });
   
   // Store Product Form & Modal States
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -399,6 +433,22 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
       } catch (e) {
         console.error('Error loading store products:', e);
         setStoreProducts(DEFAULT_STORE_PRODUCTS);
+      }
+
+      try {
+        const fetchedCategories = await getStoreCategories();
+        setStoreCategories(fetchedCategories);
+      } catch (e) {
+        console.error('Error loading store categories:', e);
+        setStoreCategories(DEFAULT_STORE_CATEGORIES);
+      }
+
+      try {
+        const fetchedServices = await getServicesData();
+        setServicesList(fetchedServices);
+      } catch (e) {
+        console.error('Error loading services list:', e);
+        setServicesList(SERVICES);
       }
 
       // Load administrators list if user is owner / has permission
@@ -779,6 +829,193 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
     } catch (err) {
       console.error(err);
       showStatus('Erro ao guardar os preços', true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Category Management Handlers
+  const handleOpenAddCategory = () => {
+    setEditingCategory(null);
+    setCatForm({
+      id: '',
+      name: '',
+      slug: '',
+      description: '',
+      imageUrl: '',
+      iconName: 'Printer',
+      badge: ''
+    });
+    setIsCategoryModalOpen(true);
+  };
+
+  const handleOpenEditCategory = (cat: StoreCategory) => {
+    setEditingCategory(cat);
+    setCatForm(cat);
+    setIsCategoryModalOpen(true);
+  };
+
+  const handleSaveCategorySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!checkWritePermission()) return;
+    setIsLoading(true);
+    try {
+      const saved = await saveStoreCategory(catForm);
+      showStatus(`Categoria "${saved.name}" guardada com sucesso!`);
+      const updated = await getStoreCategories();
+      setStoreCategories(updated);
+      setIsCategoryModalOpen(false);
+      if (onRefreshSiteData) onRefreshSiteData();
+    } catch (err) {
+      showStatus('Erro ao guardar categoria', true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteCategoryItem = async (id: string, name: string) => {
+    if (!confirm(`Tem a certeza que deseja eliminar a categoria "${name}"?`)) return;
+    if (!checkWritePermission()) return;
+    setIsLoading(true);
+    try {
+      await deleteStoreCategory(id);
+      showStatus(`Categoria "${name}" eliminada.`);
+      const updated = await getStoreCategories();
+      setStoreCategories(updated);
+    } catch (err) {
+      showStatus('Erro ao eliminar categoria', true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Service Management Handlers
+  const handleOpenEditService = (srv: Service) => {
+    setEditingService(srv);
+    setServiceForm(srv);
+    setIsServiceModalOpen(true);
+  };
+
+  const handleSaveServiceSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!checkWritePermission()) return;
+    setIsLoading(true);
+    try {
+      await saveServiceData(serviceForm);
+      showStatus(`Serviço "${serviceForm.title}" atualizado com sucesso!`);
+      const updated = await getServicesData();
+      setServicesList(updated);
+      setIsServiceModalOpen(false);
+      if (onRefreshSiteData) onRefreshSiteData();
+    } catch (err) {
+      showStatus('Erro ao guardar serviço', true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Admin User Handlers
+  const handleNewAdminUserClick = () => {
+    setSelectedAdmin(null);
+    setFormAdminUsername('');
+    setFormAdminName('');
+    setFormAdminPasscode('');
+    setFormAdminRole('staff' as any);
+    setFormAdminPermissions({
+      canManageConfig: true,
+      canManageProducts: true,
+      canManageCategories: true,
+      canManageServices: true,
+      canManageGallery: true,
+      canManageQuotes: true,
+      canManageUsers: false,
+      editGeneral: true,
+      editProducts: true,
+      editPartners: true,
+      editPortfolio: true,
+      editGallery: true,
+      viewQuotes: true,
+      manageAdmins: false
+    } as any);
+    setIsCreatingAdmin(true);
+  };
+
+  const handleEditAdminUserClick = (user: AdminUser) => {
+    setSelectedAdmin(user);
+    setFormAdminUsername(user.username);
+    setFormAdminName(user.name);
+    setFormAdminPasscode(user.passcode);
+    setFormAdminRole(user.role as any);
+    setFormAdminPermissions((user.permissions as any) || {
+      canManageConfig: true,
+      canManageProducts: true,
+      canManageCategories: true,
+      canManageServices: true,
+      canManageGallery: true,
+      canManageQuotes: true,
+      canManageUsers: false
+    });
+    setIsCreatingAdmin(true);
+  };
+
+  const handleDeleteAdminUserItem = async (id: string, name: string) => {
+    if (!confirm(`Tem a certeza que deseja eliminar o utilizador "${name}"?`)) return;
+    if (!checkWritePermission()) return;
+    setIsLoading(true);
+    try {
+      await deleteAdminUser(id);
+      showStatus(`Utilizador "${name}" removido.`);
+      const updated = await getAdminUsers();
+      setAdminList(updated);
+    } catch (err) {
+      showStatus('Erro ao eliminar utilizador', true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveAdminUserSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formAdminUsername.trim() || !formAdminName.trim() || !formAdminPasscode.trim()) {
+      showStatus('Preencha todos os campos do utilizador', true);
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const userToSave: AdminUser = {
+        id: selectedAdmin ? selectedAdmin.id : `admin_${Date.now()}`,
+        name: formAdminName.trim(),
+        username: formAdminUsername.trim().toLowerCase(),
+        passcode: formAdminPasscode.trim(),
+        role: formAdminRole as any,
+        active: true,
+        createdAt: selectedAdmin?.createdAt || new Date().toISOString(),
+        permissions: {
+          canManageConfig: (formAdminPermissions as any).canManageConfig ?? true,
+          canManageProducts: (formAdminPermissions as any).canManageProducts ?? true,
+          canManageCategories: (formAdminPermissions as any).canManageCategories ?? true,
+          canManageServices: (formAdminPermissions as any).canManageServices ?? true,
+          canManageGallery: (formAdminPermissions as any).canManageGallery ?? true,
+          canManageQuotes: (formAdminPermissions as any).canManageQuotes ?? true,
+          canManageUsers: (formAdminPermissions as any).canManageUsers ?? false,
+          editGeneral: (formAdminPermissions as any).canManageConfig ?? true,
+          editProducts: (formAdminPermissions as any).canManageProducts ?? true,
+          editPartners: (formAdminPermissions as any).canManageConfig ?? true,
+          editPortfolio: (formAdminPermissions as any).canManageGallery ?? true,
+          editGallery: (formAdminPermissions as any).canManageGallery ?? true,
+          viewQuotes: (formAdminPermissions as any).canManageQuotes ?? true,
+          manageAdmins: (formAdminPermissions as any).canManageUsers ?? false
+        }
+      };
+
+      await saveAdminUser(userToSave);
+      showStatus(`Utilizador "${userToSave.name}" guardado com sucesso!`);
+      const updatedAdmins = await getAdminUsers();
+      setAdminList(updatedAdmins);
+      setIsCreatingAdmin(false);
+    } catch (err) {
+      console.error('Error saving admin user:', err);
+      showStatus('Erro ao guardar utilizador admin', true);
     } finally {
       setIsLoading(false);
     }
@@ -1409,6 +1646,18 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                 </button>
               )}
 
+              {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editGeneral) && (
+                <button
+                  onClick={() => setActiveTab('services')}
+                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-colors cursor-pointer ${
+                    activeTab === 'services' ? 'bg-brand-orange text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                  }`}
+                >
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  <span>Serviços & Fotografias</span>
+                </button>
+              )}
+
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editProducts) && (
                 <button
                   onClick={() => setActiveTab('store-products')}
@@ -1422,6 +1671,23 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                   </div>
                   <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full ${activeTab === 'store-products' ? 'bg-white text-brand-orange' : 'bg-brand-orange/20 text-brand-orange'}`}>
                     {storeProducts.length}
+                  </span>
+                </button>
+              )}
+
+              {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editProducts) && (
+                <button
+                  onClick={() => setActiveTab('categories')}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-colors cursor-pointer ${
+                    activeTab === 'categories' ? 'bg-brand-orange text-white shadow-[0_12px_28px_rgba(245,158,11,0.20)]' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <Tag className="w-4 h-4 text-orange-400" />
+                    <span>Categorias & Capas</span>
+                  </div>
+                  <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full ${activeTab === 'categories' ? 'bg-white text-brand-orange' : 'bg-orange-500/20 text-orange-300'}`}>
+                    {storeCategories.length}
                   </span>
                 </button>
               )}
@@ -2667,6 +2933,222 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                     </div>
                   );
                 })()}
+              </motion.div>
+            )}
+
+            {/* TAB CONTENT: CATEGORIAS DA LOJA ONLINE */}
+            {activeTab === 'categories' && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900 border border-white/10 rounded-2xl p-6 shadow-xl">
+                  <div>
+                    <h2 className="text-lg font-display font-bold text-white flex items-center space-x-2">
+                      <Tag className="w-5 h-5 text-brand-orange" />
+                      <span>Gestão de Categorias & Imagens de Capa da Loja</span>
+                    </h2>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Altere os títulos, descrições e carregue imagens de capa personalizadas para cada categoria da Loja Online.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={handleOpenAddCategory}
+                    className="bg-brand-orange hover:bg-brand-orange-hover text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center space-x-2 cursor-pointer transition-all shadow-md"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Criar Nova Categoria</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {storeCategories.map((cat, idx) => (
+                    <div key={cat.id || idx} className="bg-slate-900 border border-white/10 rounded-2xl p-5 space-y-4 shadow-lg flex flex-col justify-between">
+                      <div className="space-y-3">
+                        <div className="relative h-36 rounded-xl overflow-hidden bg-slate-950 border border-white/5 group">
+                          <img
+                            src={cat.imageUrl || 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=600&q=80'}
+                            alt={cat.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+                          <div className="absolute bottom-2 left-2 right-2 flex justify-between items-end text-white">
+                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-brand-orange/90 px-2 py-0.5 rounded-full">
+                              {cat.badge || cat.slug}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div>
+                          <h3 className="text-base font-bold text-white mt-1">{cat.name}</h3>
+                          <p className="text-xs text-slate-400 mt-1 line-clamp-2">{cat.description}</p>
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-white/10 flex items-center justify-between">
+                        <span className="text-[10px] font-mono text-slate-500 uppercase">Slug: {cat.slug}</span>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleOpenEditCategory(cat)}
+                            className="bg-white/5 hover:bg-white/10 border border-white/10 text-white p-2 rounded-lg text-xs cursor-pointer transition-colors"
+                            title="Editar Categoria"
+                          >
+                            <Edit2 className="w-3.5 h-3.5 text-amber-400" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCategoryItem(cat.id, cat.name)}
+                            className="bg-red-950/40 hover:bg-red-900/60 border border-red-900/50 text-red-300 p-2 rounded-lg text-xs cursor-pointer transition-colors"
+                            title="Apagar Categoria"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {/* TAB CONTENT: SERVIÇOS & FOTOGRAFIAS */}
+            {activeTab === 'services' && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                <div className="bg-slate-900 border border-white/10 rounded-2xl p-6 shadow-xl">
+                  <h2 className="text-lg font-display font-bold text-white flex items-center space-x-2">
+                    <Sparkles className="w-5 h-5 text-brand-orange" />
+                    <span>Gestão de Serviços & Fotografias Industriais</span>
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Personalize os títulos, ícones, descrições e fotografias temáticas em alta definição de cada um dos 8 setores de produção da GPA Angola.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {servicesList.map((srv) => (
+                    <div key={srv.id} className="bg-slate-900 border border-white/10 rounded-2xl p-5 space-y-4 shadow-lg flex flex-col justify-between">
+                      <div className="space-y-3">
+                        <div className="relative h-36 rounded-xl overflow-hidden bg-slate-950 border border-white/5 group">
+                          <img
+                            src={srv.imageUrl || 'https://images.unsplash.com/photo-1562654501-a0ccc0fc3fb1?auto=format&fit=crop&w=600&q=80'}
+                            alt={srv.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+                          {srv.badge && (
+                            <span className="absolute top-2 left-2 bg-brand-orange text-white text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-full shadow-md">
+                              {srv.badge}
+                            </span>
+                          )}
+                        </div>
+
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs font-mono font-bold text-brand-orange">{srv.iconName}</span>
+                          </div>
+                          <h3 className="text-base font-bold text-white mt-1">{srv.title}</h3>
+                          <p className="text-xs text-slate-400 mt-1 line-clamp-2">{srv.description}</p>
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-white/10 flex items-center justify-between">
+                        <span className="text-[10px] font-mono text-slate-500 uppercase">{srv.id}</span>
+                        <button
+                          onClick={() => handleOpenEditService(srv)}
+                          className="bg-brand-orange/10 hover:bg-brand-orange text-brand-orange hover:text-white border border-brand-orange/30 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors flex items-center space-x-1"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                          <span>Editar Serviço</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {/* TAB CONTENT: EQUIPA & UTILIZADORES ADMIN */}
+            {activeTab === 'admins' && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900 border border-white/10 rounded-2xl p-6 shadow-xl">
+                  <div>
+                    <h2 className="text-lg font-display font-bold text-white flex items-center space-x-2">
+                      <Users className="w-5 h-5 text-brand-orange" />
+                      <span>Gestão da Equipa & Utilizadores Administradores</span>
+                    </h2>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Crie utilizadores para a equipa da GPA Angola e defina exatamente quais as abas e funções que cada um pode alterar.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={handleNewAdminUserClick}
+                    className="bg-brand-orange hover:bg-brand-orange-hover text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center space-x-2 cursor-pointer transition-all shadow-md"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Criar Novo Utilizador</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {adminList.map((user) => (
+                    <div key={user.id} className="bg-slate-900 border border-white/10 rounded-2xl p-5 space-y-4 shadow-lg flex flex-col justify-between">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className={`text-[10px] font-mono font-bold uppercase px-2.5 py-1 rounded-full ${
+                            user.role === 'superadmin' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                          }`}>
+                            {user.role === 'superadmin' ? 'Super Admin' : user.role}
+                          </span>
+                          <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                            user.active !== false ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                          }`}>
+                            {user.active !== false ? 'Ativo' : 'Inativo'}
+                          </span>
+                        </div>
+
+                        <div>
+                          <h3 className="text-base font-bold text-white">{user.name}</h3>
+                          <p className="text-xs font-mono text-slate-400">@{user.username}</p>
+                        </div>
+
+                        <div className="bg-slate-950 p-3 rounded-xl border border-white/5 space-y-1.5 text-[11px]">
+                          <span className="block text-[10px] font-mono uppercase text-slate-500 font-bold">Permissões Ativas</span>
+                          <div className="flex flex-wrap gap-1">
+                            {user.permissions?.canManageConfig && <span className="bg-white/5 text-slate-300 px-2 py-0.5 rounded text-[10px]">Textos</span>}
+                            {user.permissions?.canManageProducts && <span className="bg-white/5 text-slate-300 px-2 py-0.5 rounded text-[10px]">Produtos</span>}
+                            {user.permissions?.canManageCategories && <span className="bg-white/5 text-slate-300 px-2 py-0.5 rounded text-[10px]">Categorias</span>}
+                            {user.permissions?.canManageServices && <span className="bg-white/5 text-slate-300 px-2 py-0.5 rounded text-[10px]">Serviços</span>}
+                            {user.permissions?.canManageGallery && <span className="bg-white/5 text-slate-300 px-2 py-0.5 rounded text-[10px]">Galeria</span>}
+                            {user.permissions?.canManageQuotes && <span className="bg-white/5 text-slate-300 px-2 py-0.5 rounded text-[10px]">Orçamentos</span>}
+                            {user.permissions?.canManageUsers && <span className="bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded text-[10px]">Gerir Equipa</span>}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-white/10 flex items-center justify-between">
+                        <span className="text-[10px] font-mono text-slate-500">Passcode: ••••••</span>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleEditAdminUserClick(user)}
+                            className="bg-white/5 hover:bg-white/10 border border-white/10 text-white p-2 rounded-lg text-xs cursor-pointer transition-colors"
+                            title="Editar Utilizador"
+                          >
+                            <Edit2 className="w-3.5 h-3.5 text-amber-400" />
+                          </button>
+                          {user.username !== 'admin' && (
+                            <button
+                              onClick={() => handleDeleteAdminUserItem(user.id, user.name)}
+                              className="bg-red-950/40 hover:bg-red-900/60 border border-red-900/50 text-red-300 p-2 rounded-lg text-xs cursor-pointer transition-colors"
+                              title="Apagar Utilizador"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </motion.div>
             )}
 
@@ -4578,6 +5060,407 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                 </div>
               </form>
             </motion.div>
+          </div>
+        )}
+
+        {/* CATEGORY EDIT/CREATE MODAL */}
+        {isCategoryModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div className="bg-slate-900 border border-white/10 rounded-3xl p-6 max-w-lg w-full space-y-5 shadow-2xl relative">
+              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <h3 className="text-lg font-display font-bold text-white flex items-center space-x-2">
+                  <Tag className="w-5 h-5 text-brand-orange" />
+                  <span>{editingCategory ? 'Editar Categoria' : 'Nova Categoria da Loja'}</span>
+                </h3>
+                <button
+                  onClick={() => setIsCategoryModalOpen(false)}
+                  className="text-slate-400 hover:text-white p-1 rounded-lg cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveCategorySubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-mono uppercase text-slate-400 font-bold mb-1">Nome da Categoria</label>
+                  <input
+                    type="text"
+                    value={catForm.name}
+                    onChange={(e) => setCatForm({ ...catForm, name: e.target.value })}
+                    placeholder="Ex: Artes Gráficas"
+                    className="w-full bg-slate-950 border border-white/15 focus:border-brand-orange rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono uppercase text-slate-400 font-bold mb-1">Identificador / Slug (Filtro)</label>
+                  <input
+                    type="text"
+                    value={catForm.slug}
+                    onChange={(e) => setCatForm({ ...catForm, slug: e.target.value })}
+                    placeholder="Ex: impressao"
+                    className="w-full bg-slate-950 border border-white/15 focus:border-brand-orange rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono uppercase text-slate-400 font-bold mb-1">Destaque / Badge</label>
+                  <input
+                    type="text"
+                    value={catForm.badge || ''}
+                    onChange={(e) => setCatForm({ ...catForm, badge: e.target.value })}
+                    placeholder="Ex: Produção Offset 24h"
+                    className="w-full bg-slate-950 border border-white/15 focus:border-brand-orange rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono uppercase text-slate-400 font-bold mb-1">Descrição Curta</label>
+                  <textarea
+                    value={catForm.description}
+                    onChange={(e) => setCatForm({ ...catForm, description: e.target.value })}
+                    rows={2}
+                    className="w-full bg-slate-950 border border-white/15 focus:border-brand-orange rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono uppercase text-slate-400 font-bold mb-1">Link ou Ficheiro da Imagem de Capa</label>
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={catForm.imageUrl}
+                      onChange={(e) => setCatForm({ ...catForm, imageUrl: e.target.value })}
+                      placeholder="https://images.unsplash.com/..."
+                      className="flex-1 bg-slate-950 border border-white/15 focus:border-brand-orange rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
+                    />
+                    <label className="bg-white/10 hover:bg-white/15 border border-white/15 px-3 py-2 rounded-xl text-xs font-bold text-white cursor-pointer flex items-center space-x-1">
+                      <Upload className="w-3.5 h-3.5 text-brand-orange" />
+                      <span>Enviar</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleFileUpload(e, (url) => setCatForm({ ...catForm, imageUrl: url }))}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {catForm.imageUrl && (
+                  <div className="h-32 rounded-xl overflow-hidden bg-slate-950 border border-white/10">
+                    <img src={catForm.imageUrl} alt="Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  </div>
+                )}
+
+                <div className="pt-4 flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsCategoryModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl border border-white/10 text-slate-300 text-xs font-semibold hover:bg-white/5 cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-brand-orange hover:bg-brand-orange-hover text-white font-bold px-5 py-2.5 rounded-xl text-xs flex items-center space-x-1.5 shadow-md cursor-pointer"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>Guardar Categoria</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* SERVICE EDIT MODAL */}
+        {isServiceModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div className="bg-slate-900 border border-white/10 rounded-3xl p-6 max-w-xl w-full space-y-5 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <h3 className="text-lg font-display font-bold text-white flex items-center space-x-2">
+                  <Sparkles className="w-5 h-5 text-brand-orange" />
+                  <span>Editar Serviço Industrial: {editingService?.title}</span>
+                </h3>
+                <button
+                  onClick={() => setIsServiceModalOpen(false)}
+                  className="text-slate-400 hover:text-white p-1 rounded-lg cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveServiceSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-mono uppercase text-slate-400 font-bold mb-1">Título do Serviço</label>
+                  <input
+                    type="text"
+                    value={serviceForm.title}
+                    onChange={(e) => setServiceForm({ ...serviceForm, title: e.target.value })}
+                    className="w-full bg-slate-950 border border-white/15 focus:border-brand-orange rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-mono uppercase text-slate-400 font-bold mb-1">Ícone (Nome Lucide)</label>
+                    <input
+                      type="text"
+                      value={serviceForm.iconName}
+                      onChange={(e) => setServiceForm({ ...serviceForm, iconName: e.target.value })}
+                      placeholder="Ex: Printer, Shirt, Palette"
+                      className="w-full bg-slate-950 border border-white/15 focus:border-brand-orange rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-mono uppercase text-slate-400 font-bold mb-1">Badge de Destaque</label>
+                    <input
+                      type="text"
+                      value={serviceForm.badge || ''}
+                      onChange={(e) => setServiceForm({ ...serviceForm, badge: e.target.value })}
+                      placeholder="Ex: Tecnologia Offset"
+                      className="w-full bg-slate-950 border border-white/15 focus:border-brand-orange rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono uppercase text-slate-400 font-bold mb-1">Descrição Resumida</label>
+                  <textarea
+                    value={serviceForm.description}
+                    onChange={(e) => setServiceForm({ ...serviceForm, description: e.target.value })}
+                    rows={2}
+                    className="w-full bg-slate-950 border border-white/15 focus:border-brand-orange rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono uppercase text-slate-400 font-bold mb-1">Descrição Completa</label>
+                  <textarea
+                    value={serviceForm.fullDescription}
+                    onChange={(e) => setServiceForm({ ...serviceForm, fullDescription: e.target.value })}
+                    rows={4}
+                    className="w-full bg-slate-950 border border-white/15 focus:border-brand-orange rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono uppercase text-slate-400 font-bold mb-1">Fotografia Temática / Capa Industrial (URL ou Ficheiro)</label>
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={serviceForm.imageUrl || ''}
+                      onChange={(e) => setServiceForm({ ...serviceForm, imageUrl: e.target.value })}
+                      placeholder="https://images.unsplash.com/..."
+                      className="flex-1 bg-slate-950 border border-white/15 focus:border-brand-orange rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
+                    />
+                    <label className="bg-white/10 hover:bg-white/15 border border-white/15 px-3 py-2 rounded-xl text-xs font-bold text-white cursor-pointer flex items-center space-x-1">
+                      <Upload className="w-3.5 h-3.5 text-brand-orange" />
+                      <span>Enviar</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleFileUpload(e, (url) => setServiceForm({ ...serviceForm, imageUrl: url }))}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {serviceForm.imageUrl && (
+                  <div className="h-40 rounded-xl overflow-hidden bg-slate-950 border border-white/10">
+                    <img src={serviceForm.imageUrl} alt="Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  </div>
+                )}
+
+                <div className="pt-4 flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsServiceModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl border border-white/10 text-slate-300 text-xs font-semibold hover:bg-white/5 cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-brand-orange hover:bg-brand-orange-hover text-white font-bold px-5 py-2.5 rounded-xl text-xs flex items-center space-x-1.5 shadow-md cursor-pointer"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>Guardar Alterações do Serviço</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        {/* CREATE/EDIT ADMIN USER MODAL */}
+        {isCreatingAdmin && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div className="bg-slate-900 border border-white/10 rounded-3xl p-6 max-w-lg w-full space-y-5 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <h3 className="text-lg font-display font-bold text-white flex items-center space-x-2">
+                  <Users className="w-5 h-5 text-brand-orange" />
+                  <span>{selectedAdmin ? 'Editar Utilizador Admin' : 'Criar Novo Utilizador Admin'}</span>
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setIsCreatingAdmin(false)}
+                  className="text-slate-400 hover:text-white p-1 rounded-lg cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveAdminUserSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-mono uppercase text-slate-400 font-bold mb-1">Nome Completo</label>
+                  <input
+                    type="text"
+                    value={formAdminName}
+                    onChange={(e) => setFormAdminName(e.target.value)}
+                    placeholder="Ex: Carlos Silva"
+                    className="w-full bg-slate-950 border border-white/15 focus:border-brand-orange rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono uppercase text-slate-400 font-bold mb-1">Nome de Utilizador (@username)</label>
+                  <input
+                    type="text"
+                    value={formAdminUsername}
+                    onChange={(e) => setFormAdminUsername(e.target.value)}
+                    placeholder="Ex: csilva"
+                    className="w-full bg-slate-950 border border-white/15 focus:border-brand-orange rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono uppercase text-slate-400 font-bold mb-1">Palavra-passe / Passcode</label>
+                  <input
+                    type="text"
+                    value={formAdminPasscode}
+                    onChange={(e) => setFormAdminPasscode(e.target.value)}
+                    placeholder="Ex: gpa2026"
+                    className="w-full bg-slate-950 border border-white/15 focus:border-brand-orange rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono uppercase text-slate-400 font-bold mb-1">Função / Função no Sistema</label>
+                  <select
+                    value={formAdminRole}
+                    onChange={(e) => setFormAdminRole(e.target.value as any)}
+                    className="w-full bg-slate-950 border border-white/15 focus:border-brand-orange rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
+                  >
+                    <option value="superadmin">Super Admin (Acesso Total)</option>
+                    <option value="gestor_comercial">Gestor Comercial</option>
+                    <option value="gestor_produtos">Gestor de Produtos</option>
+                    <option value="editor_conteudo">Editor de Conteúdo</option>
+                    <option value="staff">Staff / Assistente</option>
+                  </select>
+                </div>
+
+                <div className="bg-slate-950 p-4 rounded-xl border border-white/10 space-y-3">
+                  <label className="block text-xs font-mono uppercase text-brand-orange font-bold">Permissões Específicas de Acesso</label>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-300">
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={(formAdminPermissions as any).canManageConfig ?? true}
+                        onChange={(e) => setFormAdminPermissions({ ...formAdminPermissions, canManageConfig: e.target.checked } as any)}
+                        className="rounded border-white/20 bg-slate-900 text-brand-orange focus:ring-brand-orange"
+                      />
+                      <span>Textos & Contactos</span>
+                    </label>
+
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={(formAdminPermissions as any).canManageProducts ?? true}
+                        onChange={(e) => setFormAdminPermissions({ ...formAdminPermissions, canManageProducts: e.target.checked } as any)}
+                        className="rounded border-white/20 bg-slate-900 text-brand-orange focus:ring-brand-orange"
+                      />
+                      <span>Produtos da Loja</span>
+                    </label>
+
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={(formAdminPermissions as any).canManageCategories ?? true}
+                        onChange={(e) => setFormAdminPermissions({ ...formAdminPermissions, canManageCategories: e.target.checked } as any)}
+                        className="rounded border-white/20 bg-slate-900 text-brand-orange focus:ring-brand-orange"
+                      />
+                      <span>Categorias da Loja</span>
+                    </label>
+
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={(formAdminPermissions as any).canManageServices ?? true}
+                        onChange={(e) => setFormAdminPermissions({ ...formAdminPermissions, canManageServices: e.target.checked } as any)}
+                        className="rounded border-white/20 bg-slate-900 text-brand-orange focus:ring-brand-orange"
+                      />
+                      <span>Serviços & Fotografias</span>
+                    </label>
+
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={(formAdminPermissions as any).canManageGallery ?? true}
+                        onChange={(e) => setFormAdminPermissions({ ...formAdminPermissions, canManageGallery: e.target.checked } as any)}
+                        className="rounded border-white/20 bg-slate-900 text-brand-orange focus:ring-brand-orange"
+                      />
+                      <span>Galeria de Produção</span>
+                    </label>
+
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={(formAdminPermissions as any).canManageQuotes ?? true}
+                        onChange={(e) => setFormAdminPermissions({ ...formAdminPermissions, canManageQuotes: e.target.checked } as any)}
+                        className="rounded border-white/20 bg-slate-900 text-brand-orange focus:ring-brand-orange"
+                      />
+                      <span>Orçamentos de Clientes</span>
+                    </label>
+
+                    <label className="flex items-center space-x-2 cursor-pointer col-span-2 pt-1 border-t border-white/5">
+                      <input
+                        type="checkbox"
+                        checked={(formAdminPermissions as any).canManageUsers ?? false}
+                        onChange={(e) => setFormAdminPermissions({ ...formAdminPermissions, canManageUsers: e.target.checked } as any)}
+                        className="rounded border-white/20 bg-slate-900 text-brand-orange focus:ring-brand-orange"
+                      />
+                      <span className="font-bold text-amber-300">Gestão de Outros Utilizadores (Gerir Equipa)</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="pt-4 flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreatingAdmin(false)}
+                    className="px-4 py-2.5 rounded-xl border border-white/10 text-slate-300 text-xs font-semibold hover:bg-white/5 cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-brand-orange hover:bg-brand-orange-hover text-white font-bold px-5 py-2.5 rounded-xl text-xs flex items-center space-x-1.5 shadow-md cursor-pointer"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>Guardar Utilizador</span>
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
       </AnimatePresence>

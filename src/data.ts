@@ -1,7 +1,55 @@
-import { Service, Project, Testimonial, StoreProduct } from './types';
+import { Service, Project, Testimonial, StoreProduct, StoreCategory } from './types';
 import heroShowcaseImage from './assets/images/hero_showcase_1782469342727.jpg';
 
 export const HERO_IMAGE_PATH = heroShowcaseImage;
+
+export const DEFAULT_STORE_CATEGORIES: StoreCategory[] = [
+  {
+    id: 'cat-impressao',
+    name: 'Impressão Gráfica',
+    slug: 'impressao',
+    description: 'Cartões offset premium, flyers, folhetos, catálogos e livros institucionais de alta tiragem.',
+    imageUrl: 'https://images.unsplash.com/photo-1562654501-a0ccc0fc3fb1?auto=format&fit=crop&w=1200&q=80',
+    iconName: 'Printer',
+    badge: 'Produção Offset 24h'
+  },
+  {
+    id: 'cat-textil',
+    name: 'Personalização Têxtil',
+    slug: 'textil',
+    description: 'Bordados computadorizados de alta densidade e estamparia DTF em polos, fardas e t-shirts.',
+    imageUrl: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&w=1200&q=80',
+    iconName: 'Shirt',
+    badge: 'Bordado Industrial'
+  },
+  {
+    id: 'cat-sinaletica',
+    name: 'Sinalética & Fachadas',
+    slug: 'sinaletica',
+    description: 'Reclames luminosos LED 3D, placas corporativas em acrílico/alucobond e decoração de frotas.',
+    imageUrl: 'https://images.unsplash.com/photo-1542744173-8e0ee26bf15a?auto=format&fit=crop&w=1200&q=80',
+    iconName: 'Signpost',
+    badge: 'Montagem Nacional'
+  },
+  {
+    id: 'cat-brindes',
+    name: 'Brindes Corporativos',
+    slug: 'brindes',
+    description: 'Kits executivos VIP com gravação a laser, garrafas térmicas inteligentes, agendas e pen drives.',
+    imageUrl: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=1200&q=80',
+    iconName: 'Gift',
+    badge: 'Gravação Laser Precision'
+  },
+  {
+    id: 'cat-design',
+    name: 'Design & Branding',
+    slug: 'design',
+    description: 'Identidades visuais completas, redesenho de marcas, embalagens e manuais de normas.',
+    imageUrl: 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?auto=format&fit=crop&w=1200&q=80',
+    iconName: 'Palette',
+    badge: 'Estúdio Criativo GPA'
+  }
+];
 
 export const SERVICES: Service[] = [
   {
@@ -10,6 +58,8 @@ export const SERVICES: Service[] = [
     iconName: 'Printer',
     description: 'Offset e digital de alta qualidade, cartões, flyers, catálogos e folhetos.',
     fullDescription: 'Oferecemos soluções de impressão de última geração, combinando tecnologia offset para grandes volumes e impressão digital para pequenas tiragens com máxima fidelidade de cores e acabamentos premium.',
+    imageUrl: 'https://images.unsplash.com/photo-1562654501-a0ccc0fc3fb1?auto=format&fit=crop&w=800&q=80',
+    badge: 'Tecnologia Offset',
     features: [
       'Resolução ultra-alta de impressão',
       'Papéis finos e ecológicos de diversas gramagens',
@@ -24,6 +74,8 @@ export const SERVICES: Service[] = [
     iconName: 'Shirt',
     description: 'Estamparia, bordados e fardamento personalizado para a sua equipa.',
     fullDescription: 'Dê vida à sua marca no vestuário. Desenvolvemos e personalizamos uniformes corporativos, t-shirts promocionais, polos, casacos e bonés com as melhores técnicas de estamparia e bordado industrial de alta precisão.',
+    imageUrl: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&w=800&q=80',
+    badge: 'Bordado e Serigrafia',
     features: [
       'Serigrafia de alta durabilidade',
       'Bordados computadorizados de alta definição',
@@ -38,6 +90,8 @@ export const SERVICES: Service[] = [
     iconName: 'Palette',
     description: 'Identidade visual, branding, logótipos e paginação profissional.',
     fullDescription: 'Criamos marcas fortes que comunicam com clareza os valores do seu negócio. Desde a criação de logótipos memoráveis até ao desenvolvimento completo de manuais de identidade e materiais editoriais.',
+    imageUrl: 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?auto=format&fit=crop&w=800&q=80',
+    badge: 'Estúdio de Criação',
     features: [
       'Criação de marcas (Branding) do zero',
       'Redesenho e modernização de logótipos',
@@ -52,6 +106,8 @@ export const SERVICES: Service[] = [
     iconName: 'Megaphone',
     description: 'Gestão de redes sociais, campanhas de anúncios e estratégia de marca.',
     fullDescription: 'Conectamos a sua empresa ao seu público-alvo no ecossistema online. Planeamos e executamos campanhas de tráfego pago, gestão de redes sociais (Instagram, Facebook, LinkedIn) e optimização de presença digital.',
+    imageUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80',
+    badge: 'Estratégia & Anúncios',
     features: [
       'Gestão estratégica de Redes Sociais',
       'Campanhas de Google Ads e Meta Ads (Facebook/Instagram)',
@@ -66,6 +122,8 @@ export const SERVICES: Service[] = [
     iconName: 'Video',
     description: 'Vídeos institucionais, cobertura de eventos, fotografia e animação 2D/3D.',
     fullDescription: 'Contamos histórias em movimento que geram conexão imediata. Captamos a essência da sua empresa através de vídeos institucionais corporativos, vídeos promocionais para redes sociais, fotografia comercial de alta qualidade e animações cativantes.',
+    imageUrl: 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?auto=format&fit=crop&w=800&q=80',
+    badge: 'Produção 4K',
     features: [
       'Captação de vídeo em alta definição (4K)',
       'Edição e pós-produção cinematográfica',
@@ -80,6 +138,8 @@ export const SERVICES: Service[] = [
     iconName: 'Gift',
     description: 'Canecas, canetas, agendas, sacos e brindes tecnológicos personalizados.',
     fullDescription: 'Marque presença no dia-a-dia dos seus parceiros e clientes com brindes úteis e elegantes. Oferecemos um vasto catálogo de brindes promocionais personalizados com gravação a laser, tampografia ou UV direto.',
+    imageUrl: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80',
+    badge: 'Gravação Laser',
     features: [
       'Gravação a laser de alta durabilidade',
       'Uv Direto a cores em superfícies rígidas',
@@ -94,6 +154,8 @@ export const SERVICES: Service[] = [
     iconName: 'Signpost',
     description: 'Placas, decoração de viaturas, reclames luminosos e lonas de grande formato.',
     fullDescription: 'Destaque fisicamente o seu estabelecimento. Desenvolvemos, produzimos e instalamos painéis de sinalização interna e externa, reclames luminosos em LED, decoração de frotas comerciais e lonas gigantes de alta resistência.',
+    imageUrl: 'https://images.unsplash.com/photo-1542744173-8e0ee26bf15a?auto=format&fit=crop&w=800&q=80',
+    badge: 'Reclames LED 3D',
     features: [
       'Impressão em grande formato com tintas eco-solventes',
       'Reclames luminosos energeticamente eficientes (LED)',
@@ -108,6 +170,8 @@ export const SERVICES: Service[] = [
     iconName: 'Layers',
     description: 'Concepção, montagem e decoração de stands para feiras e conferências.',
     fullDescription: 'Crie uma experiência imersiva para os seus visitantes em feiras, exposições ou congressos. Tratamos de todo o processo: desde o design conceptual 3D do stand à produção de painéis, mobiliário corporativo e montagem final na feira.',
+    imageUrl: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=800&q=80',
+    badge: 'Carpintaria & Montagem 3D',
     features: [
       'Design e renderização 3D conceptual antes da feira',
       'Produção e carpintaria própria de estruturas de stand',

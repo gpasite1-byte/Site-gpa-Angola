@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import * as Icons from 'lucide-react';
 import { SERVICES } from '../data';
 import { Service } from '../types';
+import { getServicesData } from '../firebaseClient';
 
 interface ServicesExplorerProps {
   onOpenQuoteCalculatorWithService: (serviceId: string) => void;
@@ -10,6 +11,15 @@ interface ServicesExplorerProps {
 
 export default function ServicesExplorer({ onOpenQuoteCalculatorWithService }: ServicesExplorerProps) {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [liveServices, setLiveServices] = useState<Service[]>(SERVICES);
+
+  useEffect(() => {
+    getServicesData().then(data => {
+      if (data && data.length > 0) {
+        setLiveServices(data);
+      }
+    });
+  }, []);
 
   // Dynamic Lucide Icon Resolver
   const renderIcon = (iconName: string, className: string = "w-6 h-6") => {
@@ -32,7 +42,7 @@ export default function ServicesExplorer({ onOpenQuoteCalculatorWithService }: S
             viewport={{ once: true }}
             className="inline-block text-[11px] font-mono font-bold tracking-[0.24em] text-brand-orange uppercase bg-white/70 px-4 py-2 rounded-full border border-brand-orange/15 shadow-[0_10px_24px_rgba(245,158,11,0.12)]"
           >
-            Serviços de Impacto
+            Capabilities & Produção Industrial
           </motion.div>
 
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-extrabold tracking-[-0.04em] text-brand-purple">
@@ -40,12 +50,12 @@ export default function ServicesExplorer({ onOpenQuoteCalculatorWithService }: S
           </h2>
 
           <p className="text-base sm:text-lg text-slate-600 font-sans leading-relaxed">
-            Explore o nosso leque completo de especialidades. Clique em qualquer serviço para conhecer os pormenores, produtos típicos e solicitar um orçamento personalizado instantâneo.
+            Conheça a nossa capacidade técnica e parque de máquinas. Clique em qualquer setor de produção para explorar os equipamentos, produtos finais e solicitar orçamento direto.
           </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {SERVICES.map((service, idx) => {
+          {liveServices.map((service, idx) => {
             const isSelected = selectedService?.id === service.id;
             return (
               <motion.div
@@ -55,35 +65,59 @@ export default function ServicesExplorer({ onOpenQuoteCalculatorWithService }: S
                 viewport={{ once: true }}
                 transition={{ duration: 0.4, delay: idx * 0.05 }}
                 onClick={() => setSelectedService(isSelected ? null : service)}
-                className={`group relative p-6 rounded-[28px] border cursor-pointer transition-all duration-300 backdrop-blur-md ${
+                className={`group relative rounded-[28px] border cursor-pointer transition-all duration-300 overflow-hidden backdrop-blur-md ${
                   isSelected
-                    ? 'border-brand-orange/50 bg-white shadow-[0_25px_50px_rgba(17,13,34,0.12)] scale-[1.01] z-10'
-                    : 'border-slate-200/80 bg-white/80 shadow-[0_16px_32px_rgba(15,23,42,0.05)] hover:shadow-[0_20px_38px_rgba(17,13,34,0.10)] hover:border-brand-orange/30 hover:-translate-y-1'
+                    ? 'border-brand-orange/50 bg-white shadow-[0_25px_50px_rgba(17,13,34,0.15)] scale-[1.01] z-10'
+                    : 'border-slate-200/80 bg-white/80 shadow-[0_16px_32px_rgba(15,23,42,0.05)] hover:shadow-[0_22px_42px_rgba(17,13,34,0.12)] hover:border-brand-orange/30 hover:-translate-y-1'
                 }`}
               >
-                <div className={`absolute top-0 left-0 w-full h-1.5 rounded-t-[28px] transition-all ${
-                  isSelected ? 'bg-gradient-to-r from-brand-orange via-amber-400 to-brand-gold' : 'bg-transparent group-hover:bg-gradient-to-r group-hover:from-brand-orange/50 group-hover:to-amber-400/50'
-                }`}></div>
+                {/* Header Photo Container */}
+                <div className="relative h-44 w-full overflow-hidden bg-slate-900">
+                  <img
+                    src={service.imageUrl || 'https://images.unsplash.com/photo-1562654501-a0ccc0fc3fb1?auto=format&fit=crop&w=800&q=80'}
+                    alt={service.title}
+                    className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 opacity-85"
+                    referrerPolicy="no-referrer"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent" />
+                  
+                  {/* Badge */}
+                  {service.badge && (
+                    <div className="absolute top-3.5 left-3.5">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-brand-orange/90 text-white shadow-md backdrop-blur-md">
+                        {service.badge}
+                      </span>
+                    </div>
+                  )}
 
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors mb-5 ${
-                  isSelected
-                    ? 'bg-gradient-to-br from-brand-orange to-amber-400 text-white shadow-[0_14px_28px_rgba(245,158,11,0.28)]'
-                    : 'bg-slate-100 text-slate-600 group-hover:bg-brand-orange/10 group-hover:text-brand-orange border border-slate-200'
-                }`}>
-                  {renderIcon(service.iconName, 'w-6 h-6 stroke-[2.2]')}
+                  {/* Floating Icon */}
+                  <div className={`absolute bottom-3 right-3.5 w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${
+                    isSelected
+                      ? 'bg-brand-orange text-white shadow-lg scale-110'
+                      : 'bg-white/90 text-slate-900 group-hover:bg-brand-orange group-hover:text-white shadow-md'
+                  }`}>
+                    {renderIcon(service.iconName, 'w-5 h-5 stroke-[2.2]')}
+                  </div>
                 </div>
 
-                <h3 className="text-lg font-display font-black text-brand-purple group-hover:text-brand-orange transition-colors mb-2.5">
-                  {service.title}
-                </h3>
+                {/* Card Content Body */}
+                <div className="p-5 space-y-2.5">
+                  <h3 className="text-lg font-display font-black text-brand-purple group-hover:text-brand-orange transition-colors">
+                    {service.title}
+                  </h3>
 
-                <p className="text-sm text-slate-600 font-sans leading-relaxed mb-4">
-                  {service.description}
-                </p>
+                  <p className="text-xs sm:text-sm text-slate-600 font-sans leading-relaxed line-clamp-2">
+                    {service.description}
+                  </p>
 
-                <div className="flex items-center space-x-1.5 text-xs font-semibold text-brand-orange font-mono group-hover:translate-x-1 transition-transform">
-                  <span>{isSelected ? 'Ocultar detalhes' : 'Ver detalhes'}</span>
-                  <Icons.ArrowRight className="w-3.5 h-3.5" />
+                  <div className="pt-2 flex items-center justify-between border-t border-slate-100 text-xs font-semibold text-brand-orange font-mono">
+                    <span className="flex items-center space-x-1.5 group-hover:translate-x-1 transition-transform">
+                      <span>{isSelected ? 'Ocultar detalhes' : 'Ver especialidades'}</span>
+                      <Icons.ArrowRight className="w-3.5 h-3.5" />
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-mono">GPA Industrial</span>
+                  </div>
                 </div>
               </motion.div>
             );
@@ -102,20 +136,36 @@ export default function ServicesExplorer({ onOpenQuoteCalculatorWithService }: S
               className="overflow-hidden"
             >
               <div className="bg-white text-slate-800 rounded-3xl p-6 sm:p-8 md:p-10 shadow-xl relative border border-slate-200/80">
-                {/* Glowing radial back */}
                 <div className="absolute top-0 right-0 w-96 h-96 bg-brand-orange/5 rounded-full blur-3xl pointer-events-none"></div>
 
                 <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                   
-                  {/* Left Column: Full Bio & Features */}
+                  {/* Left Column: Full Bio, Image & Features */}
                   <div className="lg:col-span-7 space-y-6">
                     <div className="flex items-center space-x-4">
-                      <div className="p-3.5 rounded-2xl bg-brand-orange text-white">
+                      <div className="p-3.5 rounded-2xl bg-brand-orange text-white shadow-md">
                         {renderIcon(selectedService.iconName, 'w-7 h-7 stroke-[2.2]')}
                       </div>
                       <div>
-                        <span className="text-xs font-mono text-brand-orange font-bold uppercase tracking-wider">Serviço Especializado</span>
+                        <span className="text-xs font-mono text-brand-orange font-bold uppercase tracking-wider">Setor Industrial GPA</span>
                         <h3 className="text-2xl sm:text-3xl font-display font-extrabold mt-0.5 text-brand-purple">{selectedService.title}</h3>
+                      </div>
+                    </div>
+
+                    {/* Featured Large Image Banner */}
+                    <div className="relative h-56 sm:h-64 rounded-2xl overflow-hidden shadow-md border border-slate-100 group">
+                      <img
+                        src={selectedService.imageUrl || 'https://images.unsplash.com/photo-1562654501-a0ccc0fc3fb1?auto=format&fit=crop&w=1000&q=80'}
+                        alt={selectedService.title}
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
+                      <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white">
+                        <span className="text-xs font-mono font-bold uppercase tracking-widest bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
+                          {selectedService.badge || 'Capacidade Industrial'}
+                        </span>
+                        <span className="text-[11px] font-sans text-slate-200">Garantia GPA Angola</span>
                       </div>
                     </div>
 
@@ -147,7 +197,7 @@ export default function ServicesExplorer({ onOpenQuoteCalculatorWithService }: S
                       <ul className="space-y-2.5">
                         {selectedService.typicalProducts.map((prod, i) => (
                           <li key={i} className="flex items-center space-x-3 text-sm text-slate-700 font-medium">
-                            <span className="w-1.5 h-1.5 rounded-full bg-brand-orange"></span>
+                            <span className="w-2 h-2 rounded-full bg-brand-orange"></span>
                             <span>{prod}</span>
                           </li>
                         ))}
@@ -169,9 +219,9 @@ export default function ServicesExplorer({ onOpenQuoteCalculatorWithService }: S
                     </div>
                   </div>
 
-                  </div>
-
                 </div>
+
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -180,3 +230,4 @@ export default function ServicesExplorer({ onOpenQuoteCalculatorWithService }: S
     </section>
   );
 }
+

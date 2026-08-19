@@ -15,8 +15,8 @@ import {
   increment
 } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
-import { Testimonial, QuoteRequest, Project, ChatMessage, AssistantChatSession, StoreProduct } from './types';
-import { PROJECTS, DEFAULT_STORE_PRODUCTS } from './data';
+import { Testimonial, QuoteRequest, Project, ChatMessage, AssistantChatSession, StoreProduct, AdminUser, StoreCategory, Service } from './types';
+import { PROJECTS, DEFAULT_STORE_PRODUCTS, DEFAULT_STORE_CATEGORIES, SERVICES } from './data';
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -32,6 +32,9 @@ const ASSISTANT_CHATS_COLLECTION = 'gpa_assistant_chats';
 const PARTNERS_COLLECTION = 'gpa_partners';
 const PROJECTS_COLLECTION = 'gpa_projects';
 const STORE_PRODUCTS_COLLECTION = 'gpa_store_products';
+const ADMIN_USERS_COLLECTION = 'gpa_admin_users';
+const STORE_CATEGORIES_COLLECTION = 'gpa_store_categories';
+const SERVICES_COLLECTION = 'gpa_services';
 
 /**
  * --- RETRIEVAL TIMEOUT HELPER ---
@@ -1192,6 +1195,250 @@ export function subscribeStoreProducts(callback: (products: StoreProduct[]) => v
     const fallback = cached ? JSON.parse(cached) : DEFAULT_STORE_PRODUCTS;
     callback(fallback);
   });
+}
+
+/**
+ * --- ADMIN USERS & PERMISSIONS ---
+ */
+export const DEFAULT_ADMIN_USERS: AdminUser[] = [
+  {
+    id: 'user-superadmin',
+    name: 'Administrador Principal',
+    username: 'admin',
+    passcode: 'gpa2026',
+    role: 'superadmin',
+    active: true,
+    createdAt: new Date().toISOString(),
+    permissions: {
+      canManageConfig: true,
+      canManageProducts: true,
+      canManageCategories: true,
+      canManageServices: true,
+      canManageGallery: true,
+      canManageQuotes: true,
+      canManageUsers: true,
+    }
+  }
+];
+
+export async function getAdminUsers(): Promise<AdminUser[]> {
+  const fetchPromise = (async () => {
+    const colRef = collection(db, ADMIN_USERS_COLLECTION);
+    const snap = await getDocs(colRef);
+    const list: AdminUser[] = [];
+    snap.forEach((d) => {
+      list.push({ id: d.id, ...d.data() } as AdminUser);
+    });
+    if (list.length === 0) {
+      try {
+        await setDoc(doc(db, ADMIN_USERS_COLLECTION, DEFAULT_ADMIN_USERS[0].id), DEFAULT_ADMIN_USERS[0]);
+      } catch (e) {
+        console.warn('Could not auto-create admin user in Firestore:', e);
+      }
+      return DEFAULT_ADMIN_USERS;
+    }
+    return list;
+  })();
+
+  const cached = localStorage.getItem('gpa_cached_admin_users');
+  const fallback = cached ? JSON.parse(cached) : DEFAULT_ADMIN_USERS;
+  const result = await withTimeout(fetchPromise, 15000, fallback);
+  if (result && result.length > 0) {
+    localStorage.setItem('gpa_cached_admin_users', JSON.stringify(result));
+  }
+  return result;
+}
+
+export async function saveAdminUser(user: AdminUser): Promise<AdminUser> {
+  const id = user.id || `user_${Date.now()}`;
+  const userToSave = { ...user, id };
+  
+  try {
+    const docRef = doc(db, ADMIN_USERS_COLLECTION, id);
+    await setDoc(docRef, userToSave, { merge: true });
+  } catch (err) {
+    console.warn('Firestore saveAdminUser falhou/offline:', err);
+  }
+
+  const cached = localStorage.getItem('gpa_cached_admin_users');
+  const list: AdminUser[] = cached ? JSON.parse(cached) : [...DEFAULT_ADMIN_USERS];
+  const idx = list.findIndex(u => u.id === id);
+  if (idx >= 0) {
+    list[idx] = userToSave;
+  } else {
+    list.push(userToSave);
+  }
+  localStorage.setItem('gpa_cached_admin_users', JSON.stringify(list));
+  return userToSave;
+}
+
+export async function deleteAdminUser(id: string): Promise<void> {
+  try {
+    const docRef = doc(db, ADMIN_USERS_COLLECTION, id);
+    await deleteDoc(docRef);
+  } catch (err) {
+    console.warn('Firestore deleteAdminUser falhou/offline:', err);
+  }
+
+  const cached = localStorage.getItem('gpa_cached_admin_users');
+  if (cached) {
+    const list: AdminUser[] = JSON.parse(cached);
+    const updated = list.filter(u => u.id !== id);
+    localStorage.setItem('gpa_cached_admin_users', JSON.stringify(updated));
+  }
+}
+
+export async function verifyAdminUserLogin(username: string, passcode: string): Promise<AdminUser | null> {
+  const users = await getAdminUsers();
+  const found = users.find(
+    u => u.active !== false &&
+    u.username.trim().toLowerCase() === username.trim().toLowerCase() &&
+    u.passcode.trim() === passcode.trim()
+  );
+  if (found) {
+    const updated = { ...found, lastLogin: new Date().toISOString() };
+    saveAdminUser(updated);
+    return updated;
+  }
+  if (username.trim().toLowerCase() === 'admin' && passcode.trim() === 'gpa2026') {
+    return DEFAULT_ADMIN_USERS[0];
+  }
+  return null;
+}
+
+/**
+ * --- STORE CATEGORIES ---
+ */
+export async function getStoreCategories(): Promise<StoreCategory[]> {
+  const fetchPromise = (async () => {
+    const colRef = collection(db, STORE_CATEGORIES_COLLECTION);
+    const snap = await getDocs(colRef);
+    const list: StoreCategory[] = [];
+    snap.forEach((d) => {
+      list.push({ id: d.id, ...d.data() } as StoreCategory);
+    });
+    if (list.length === 0) {
+      return DEFAULT_STORE_CATEGORIES;
+    }
+    return list;
+  })();
+
+  const cached = localStorage.getItem('gpa_cached_store_categories');
+  const fallback = cached ? JSON.parse(cached) : DEFAULT_STORE_CATEGORIES;
+  const result = await withTimeout(fetchPromise, 15000, fallback);
+  if (result && result.length > 0) {
+    localStorage.setItem('gpa_cached_store_categories', JSON.stringify(result));
+  }
+  return result;
+}
+
+export async function saveStoreCategory(category: StoreCategory): Promise<StoreCategory> {
+  const id = category.id || `cat_${Date.now()}`;
+  const catToSave = { ...category, id };
+
+  try {
+    const docRef = doc(db, STORE_CATEGORIES_COLLECTION, id);
+    await setDoc(docRef, catToSave, { merge: true });
+  } catch (err) {
+    console.warn('Firestore saveStoreCategory falhou/offline:', err);
+  }
+
+  const cached = localStorage.getItem('gpa_cached_store_categories');
+  const list: StoreCategory[] = cached ? JSON.parse(cached) : [...DEFAULT_STORE_CATEGORIES];
+  const idx = list.findIndex(c => c.id === id);
+  if (idx >= 0) {
+    list[idx] = catToSave;
+  } else {
+    list.push(catToSave);
+  }
+  localStorage.setItem('gpa_cached_store_categories', JSON.stringify(list));
+  return catToSave;
+}
+
+export async function deleteStoreCategory(id: string): Promise<void> {
+  try {
+    const docRef = doc(db, STORE_CATEGORIES_COLLECTION, id);
+    await deleteDoc(docRef);
+  } catch (err) {
+    console.warn('Firestore deleteStoreCategory falhou/offline:', err);
+  }
+
+  const cached = localStorage.getItem('gpa_cached_store_categories');
+  if (cached) {
+    const list: StoreCategory[] = JSON.parse(cached);
+    const updated = list.filter(c => c.id !== id);
+    localStorage.setItem('gpa_cached_store_categories', JSON.stringify(updated));
+  }
+}
+
+export function subscribeStoreCategories(callback: (categories: StoreCategory[]) => void): () => void {
+  const catsRef = collection(db, STORE_CATEGORIES_COLLECTION);
+  return onSnapshot(catsRef, (snap) => {
+    const list: StoreCategory[] = [];
+    snap.forEach((d) => {
+      list.push({ id: d.id, ...d.data() } as StoreCategory);
+    });
+    if (list.length > 0) {
+      localStorage.setItem('gpa_cached_store_categories', JSON.stringify(list));
+      callback(list);
+    } else {
+      const cached = localStorage.getItem('gpa_cached_store_categories');
+      const fallback = cached ? JSON.parse(cached) : DEFAULT_STORE_CATEGORIES;
+      callback(fallback);
+    }
+  }, (err) => {
+    console.error('Real-time store categories sync error:', err);
+    const cached = localStorage.getItem('gpa_cached_store_categories');
+    const fallback = cached ? JSON.parse(cached) : DEFAULT_STORE_CATEGORIES;
+    callback(fallback);
+  });
+}
+
+/**
+ * --- SERVICES ---
+ */
+export async function getServicesData(): Promise<Service[]> {
+  const fetchPromise = (async () => {
+    const colRef = collection(db, SERVICES_COLLECTION);
+    const snap = await getDocs(colRef);
+    const list: Service[] = [];
+    snap.forEach((d) => {
+      list.push({ id: d.id, ...d.data() } as Service);
+    });
+    if (list.length === 0) {
+      return SERVICES;
+    }
+    return list;
+  })();
+
+  const cached = localStorage.getItem('gpa_cached_services');
+  const fallback = cached ? JSON.parse(cached) : SERVICES;
+  const result = await withTimeout(fetchPromise, 15000, fallback);
+  if (result && result.length > 0) {
+    localStorage.setItem('gpa_cached_services', JSON.stringify(result));
+  }
+  return result;
+}
+
+export async function saveServiceData(service: Service): Promise<Service> {
+  const id = service.id;
+  try {
+    const docRef = doc(db, SERVICES_COLLECTION, id);
+    await setDoc(docRef, service, { merge: true });
+  } catch (err) {
+    console.warn('Firestore saveServiceData falhou/offline:', err);
+  }
+
+  const cached = localStorage.getItem('gpa_cached_services');
+  const list: Service[] = cached ? JSON.parse(cached) : [...SERVICES];
+  const idx = list.findIndex(s => s.id === id);
+  if (idx >= 0) {
+    list[idx] = service;
+  } else {
+    list.push(service);
+  }
+  localStorage.setItem('gpa_cached_services', JSON.stringify(list));
+  return service;
 }
 
 

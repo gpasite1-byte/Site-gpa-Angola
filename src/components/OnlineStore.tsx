@@ -1,11 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   ShoppingCart, Search, Filter, ShoppingBag, ArrowRight, Check, AlertCircle, 
   Trash2, Plus, Minus, FileSpreadsheet, Grid, List, Phone, Percent, Tag, ShieldAlert, X
 } from 'lucide-react';
-import { SiteConfig, getNextCommercialRotation } from '../firebaseClient';
-import { StoreProduct } from '../types';
-import { DEFAULT_STORE_PRODUCTS } from '../data';
+import { SiteConfig, getNextCommercialRotation, subscribeStoreCategories } from '../firebaseClient';
+import { StoreProduct, StoreCategory } from '../types';
+import { DEFAULT_STORE_PRODUCTS, DEFAULT_STORE_CATEGORIES } from '../data';
 
 interface OnlineStoreProps {
   siteConfig: SiteConfig | null;
@@ -32,55 +32,6 @@ const CATEGORIES = [
   { id: 'sinaletica', label: 'Sinalética & Stands' }
 ];
 
-const PRODUCT_IMAGES: Record<string, string> = {
-  'Cartões de Visita Premium': 'https://images.unsplash.com/photo-1589149098258-3e9102ca63d3?auto=format&fit=crop&w=600&q=80',
-  'Panfletos e Flyers': 'https://images.unsplash.com/photo-1626785774573-4b799315345d?auto=format&fit=crop&w=600&q=80',
-  'Catálogos Corporativos': 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=600&q=80',
-  'Calendários e Agendas': 'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=600&q=80',
-  'Envelopes e Papel Timbrado': 'https://images.unsplash.com/photo-1598425237654-4fc758e50a93?auto=format&fit=crop&w=600&q=80',
-  
-  'T-shirts Promocionais': 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80',
-  'Polos Corporativos Bordados': 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&w=600&q=80',
-  'Fardas para Indústria e Restauração': 'https://images.unsplash.com/photo-157857437130-527eed3abbec?auto=format&fit=crop&w=600&q=80',
-  'Bonés e Viseiras': 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=600&q=80',
-  'Coletes de Segurança Personalizados': 'https://images.unsplash.com/photo-1590402444587-438e6d7edd25?auto=format&fit=crop&w=600&q=80',
-  
-  'Logótipo & Manual de Marca': 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?auto=format&fit=crop&w=600&q=80',
-  'Design de Embalagens': 'https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&w=600&q=80',
-  'Artes de Redes Sociais': 'https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?auto=format&fit=crop&w=600&q=80',
-  'Design de Flyers e Banners': 'https://images.unsplash.com/photo-1561070791-26c113006238?auto=format&fit=crop&w=600&q=80',
-  'Layouts para Stands': 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=600&q=80',
-  
-  'Pacotes Mensais de Social Media': 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=600&q=80',
-  'Configuração de Campanhas de Anúncios': 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=600&q=80',
-  'Copywriting de Vendas': 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=600&q=80',
-  'Landing Pages para Conversão': 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=600&q=80',
-  'Auditoria de Presença Digital': 'https://images.unsplash.com/photo-1542744094-3a31f103e35f?auto=format&fit=crop&w=600&q=80',
-  
-  'Vídeos Institucionais': 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=600&q=80',
-  'Spots Publicitários de 15s/30s': 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=600&q=80',
-  'Vídeo Reportagem de Eventos': 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=600&q=80',
-  'Sessões Fotográficas de Equipa': 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=600&q=80',
-  'Motion Graphics Explicativos': 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=600&q=80',
-  
-  'Canecas de Cerâmica & Garrafas Térmicas': 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80',
-  'Canetas Metálicas Gravadas a Laser': 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?auto=format&fit=crop&w=600&q=80',
-  'Blocos de Notas e Agendas': 'https://images.unsplash.com/photo-1531346878377-a5be20888e57?auto=format&fit=crop&w=600&q=80',
-  'Sacos Ecológicos (Tote Bags)': 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80',
-  'Pens USB & Powerbanks': 'https://images.unsplash.com/photo-1624996379697-f01d168b1a52?auto=format&fit=crop&w=600&q=80',
-  
-  'Placas de Sinalização Interna/Externa': 'https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=600&q=80',
-  'Decoração Integral ou Parcial de Viaturas': 'https://images.unsplash.com/photo-1516515429572-1f9f3b539443?auto=format&fit=crop&w=600&q=80',
-  'Reclames Luminosos 3D': 'https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=600&q=80',
-  'Lonas Publicitárias com Ilhós': 'https://images.unsplash.com/photo-1509343256512-d77a5cb3791b?auto=format&fit=crop&w=600&q=80',
-  'Roll-ups Autoportantes': 'https://images.unsplash.com/photo-1533750349088-cd871a91515c?auto=format&fit=crop&w=600&q=80',
-  'Stands Personalizados (Carpintaria)': 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=600&q=80',
-  'Stands Modulares para Feiras': 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=600&q=80',
-  'Balcões de Atendimento e Displays': 'https://images.unsplash.com/photo-1517502884422-41eaaced0168?auto=format&fit=crop&w=600&q=80',
-  'Backdrops de Conferência Gigantes': 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80',
-  'Roll-ups e Pop-ups Promocionais': 'https://images.unsplash.com/photo-1542744173-8e0ee26bf15a?auto=format&fit=crop&w=600&q=80'
-};
-
 export default function OnlineStore({ siteConfig, onOpenQuoteWithDetails, storeProducts }: OnlineStoreProps) {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -88,6 +39,16 @@ export default function OnlineStore({ siteConfig, onOpenQuoteWithDetails, storeP
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [liveCategories, setLiveCategories] = useState<StoreCategory[]>(DEFAULT_STORE_CATEGORIES);
+
+  useEffect(() => {
+    const unsubscribe = subscribeStoreCategories((cats) => {
+      if (cats && cats.length > 0) {
+        setLiveCategories(cats);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Dynamic products configuration from Firestore config or defaults
   const productPrices = siteConfig?.productPrices || {};
@@ -247,17 +208,22 @@ export default function OnlineStore({ siteConfig, onOpenQuoteWithDetails, storeP
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
-          {categoryShowcase.map((cat) => (
+          {liveCategories.map((cat) => (
             <button
               key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              className={`group relative overflow-hidden rounded-[28px] border text-left transition-all duration-300 ${selectedCategory === cat.id ? 'border-brand-orange shadow-[0_18px_35px_rgba(245,158,11,0.18)]' : 'border-slate-200 bg-white hover:border-slate-300'}`}
+              onClick={() => setSelectedCategory(cat.slug || cat.id)}
+              className={`group relative overflow-hidden rounded-[28px] border text-left transition-all duration-300 ${selectedCategory === cat.slug ? 'border-brand-orange shadow-[0_18px_35px_rgba(245,158,11,0.18)] scale-[1.01]' : 'border-slate-200 bg-white hover:border-brand-orange/40 hover:shadow-md'}`}
             >
-              <img src={cat.image} alt={cat.title} className="h-36 w-full object-cover transition duration-500 group-hover:scale-105" referrerPolicy="no-referrer" />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-900/20 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-4">
-                <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-orange-200">Categoria</div>
-                <h3 className="mt-2 text-lg font-display font-black text-white">{cat.title}</h3>
+              <img src={cat.imageUrl || 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=900&q=80'} alt={cat.name} className="h-36 w-full object-cover transition duration-500 group-hover:scale-105" referrerPolicy="no-referrer" loading="lazy" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/30 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-4 flex justify-between items-end">
+                <div>
+                  <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-amber-300 font-bold">{cat.badge || 'Categoria Oficial'}</div>
+                  <h3 className="mt-1 text-lg font-display font-black text-white">{cat.name}</h3>
+                </div>
+                <div className="p-2 rounded-xl bg-white/10 text-white backdrop-blur-md group-hover:bg-brand-orange transition-colors">
+                  <ArrowRight className="w-4 h-4" />
+                </div>
               </div>
             </button>
           ))}

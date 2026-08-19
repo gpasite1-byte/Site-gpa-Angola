@@ -6,6 +6,40 @@ export interface Service {
   fullDescription: string;
   features: string[];
   typicalProducts: string[];
+  imageUrl?: string;
+  badge?: string;
+}
+
+export interface AdminUserPermissions {
+  canManageConfig: boolean;
+  canManageProducts: boolean;
+  canManageCategories: boolean;
+  canManageServices: boolean;
+  canManageGallery: boolean;
+  canManageQuotes: boolean;
+  canManageUsers: boolean;
+}
+
+export interface AdminUser {
+  id: string;
+  name: string;
+  username: string;
+  passcode: string;
+  role: 'superadmin' | 'gestor_comercial' | 'gestor_produtos' | 'editor_conteudo';
+  permissions: AdminUserPermissions;
+  active: boolean;
+  createdAt: string;
+  lastLogin?: string;
+}
+
+export interface StoreCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  imageUrl: string;
+  iconName?: string;
+  badge?: string;
 }
 
 export interface Project {
@@ -92,5 +126,6 @@ export interface StoreProduct {
   badge?: string;
   inStock?: boolean;
 }
+
 
 
