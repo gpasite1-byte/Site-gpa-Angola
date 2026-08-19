@@ -2363,14 +2363,14 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                           <input
                             type="range"
                             min="0"
-                            max="0.5"
+                            max="1"
                             step="0.01"
-                            value={siteConfig.bgOpacity ?? 0.1}
+                            value={siteConfig.bgOpacity ?? 0.15}
                             onChange={(e) => setSiteConfig({ ...siteConfig, bgOpacity: Number(e.target.value) })}
                             className="flex-1 accent-brand-orange"
                           />
                           <span className="text-sm font-mono text-white font-bold w-12 text-right">
-                            {Math.round((siteConfig.bgOpacity ?? 0.1) * 100)}%
+                            {Math.round((siteConfig.bgOpacity ?? 0.15) * 100)}%
                           </span>
                         </div>
                       </div>
