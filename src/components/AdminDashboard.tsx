@@ -64,7 +64,6 @@ import {
   getAdminUsers,
   saveAdminUser,
   deleteAdminUser,
-  verifyAdminUserLogin,
   subscribeAssistantChats
 } from '../firebaseClient';
 import { Testimonial, QuoteRequest, Project, AssistantChatSession, StoreProduct, AdminUser, StoreCategory, Service } from '../types';
