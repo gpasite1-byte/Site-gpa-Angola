@@ -320,10 +320,23 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
     setAuthError('');
     setIsVerifying(true);
 
+    const rawUser = loginUsername.trim();
+    const rawPass = passcode.trim();
+
+    if (!rawUser) {
+      setAuthError('Por favor, introduza o nome de utilizador.');
+      setIsVerifying(false);
+      return;
+    }
+
+    if (!rawPass) {
+      setAuthError('Por favor, introduza o código de acesso.');
+      setIsVerifying(false);
+      return;
+    }
+
     try {
-      const targetUser = loginUsername.trim() || 'admin';
-      const targetPasscode = passcode.trim();
-      const result = await verifyAdminLogin(targetUser, targetPasscode);
+      const result = await verifyAdminLogin(rawUser, rawPass);
       if (result.success && result.user) {
         setIsAuthenticated(true);
         setCurrentAdmin(result.user);
@@ -342,68 +355,25 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
             case 'quotes': return !!result.user?.permissions?.viewQuotes || !!result.user?.permissions?.canManageQuotes;
             case 'testimonials': return !!result.user?.permissions?.editPortfolio || !!result.user?.permissions?.canManageGallery;
             case 'admins': return !!result.user?.permissions?.manageAdmins || !!result.user?.permissions?.canManageUsers;
+            case 'services': return !!result.user?.permissions?.canManageServices || !!result.user?.permissions?.editGeneral;
+            case 'store-products': return !!result.user?.permissions?.canManageProducts || !!result.user?.permissions?.editProducts;
+            case 'categories': return !!result.user?.permissions?.canManageCategories || !!result.user?.permissions?.editProducts;
             default: return false;
           }
         };
         
-        const allowed = ['general', 'partners', 'gallery', 'portfolio', 'prices', 'quotes', 'testimonials', 'admins'].filter(hasPerm);
+        const allowed = ['general', 'partners', 'gallery', 'portfolio', 'prices', 'services', 'store-products', 'categories', 'quotes', 'testimonials', 'admins'].filter(hasPerm);
         if (allowed.length > 0) {
           setActiveTab(allowed[0] as any);
         }
         
         loadAllData();
       } else {
-        setAuthError(result.error || 'Utilizador ou código incorretos.');
+        setAuthError(result.error || 'Utilizador ou código de acesso incorretos. Verifique os dados introduzidos.');
       }
     } catch (err) {
-      console.warn('Login exception, fallback check:', err);
-      const cleanUser = (loginUsername || '').trim().toLowerCase().replace(/^@/, '');
-      const cleanCode = passcode.trim();
-
-      // Check cached local users
-      let fallbackUser: AdminUser | null = null;
-      try {
-        const cached = localStorage.getItem('gpa_cached_admin_users');
-        if (cached) {
-          const list: AdminUser[] = JSON.parse(cached);
-          const found = list.find(u => 
-            ((u.username && u.username.toLowerCase().trim().replace(/^@/, '') === cleanUser) || (u.name && u.name.toLowerCase().trim() === cleanUser)) &&
-            (String(u.passcode || '').trim() === cleanCode)
-          );
-          if (found) fallbackUser = found;
-        }
-      } catch (e) {}
-
-      if (fallbackUser) {
-        setIsAuthenticated(true);
-        setCurrentAdmin(fallbackUser);
-        sessionStorage.setItem('gpa_admin_authenticated', 'true');
-        sessionStorage.setItem('gpa_current_admin', JSON.stringify(fallbackUser));
-        loadAllData();
-      } else if ((cleanUser === 'admin' || !cleanUser) && ['gpa2026', 'admin@gpa', 'gpa'].includes(cleanCode)) {
-        const masterUser = DEFAULT_ADMIN_USERS[0];
-        setIsAuthenticated(true);
-        setCurrentAdmin(masterUser);
-        sessionStorage.setItem('gpa_admin_authenticated', 'true');
-        sessionStorage.setItem('gpa_current_admin', JSON.stringify(masterUser));
-        loadAllData();
-      } else if (cleanUser === 'gestor' && (cleanCode === 'gpa2026' || ['gpa2026', 'admin@gpa'].includes(cleanCode))) {
-        const gestorUser = DEFAULT_ADMIN_USERS[1];
-        setIsAuthenticated(true);
-        setCurrentAdmin(gestorUser);
-        sessionStorage.setItem('gpa_admin_authenticated', 'true');
-        sessionStorage.setItem('gpa_current_admin', JSON.stringify(gestorUser));
-        loadAllData();
-      } else if ((cleanUser === 'comercial 1' || cleanUser === 'comercial') && cleanCode === 'dtp') {
-        const commercialUser = DEFAULT_ADMIN_USERS[2];
-        setIsAuthenticated(true);
-        setCurrentAdmin(commercialUser);
-        sessionStorage.setItem('gpa_admin_authenticated', 'true');
-        sessionStorage.setItem('gpa_current_admin', JSON.stringify(commercialUser));
-        loadAllData();
-      } else {
-        setAuthError('Utilizador ou código incorretos. Utilize utilizador: admin ou gestor, código: gpa2026.');
-      }
+      console.warn('Login exception:', err);
+      setAuthError('Erro ao validar início de sessão. Verifique os dados ou a ligação à internet.');
     } finally {
       setIsVerifying(false);
     }
@@ -647,8 +617,8 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
     setIsCreatingAdmin(true);
   };
 
-  // Helper to compress images client-side before uploading to Firestore to avoid the 1MB document limit
-  const compressImage = (file: File, maxWidth = 600, quality = 0.4): Promise<string> => {
+  // Helper to compress images client-side before uploading to Firestore to avoid the 1MB document limit (< 70KB)
+  const compressImage = (file: File, maxWidth = 1000, quality = 0.7): Promise<string> => {
     return new Promise((resolve, reject) => {
       // If it's not an image, resolve with standard reader result
       if (!file.type.startsWith('image/')) {
@@ -669,10 +639,15 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
           let width = img.width;
           let height = img.height;
 
-          // Resize if width is larger than maxWidth
-          if (width > maxWidth) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
+          // Resize if width or height is larger than maxWidth
+          if (width > maxWidth || height > maxWidth) {
+            if (width > height) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            } else {
+              width = Math.round((width * maxWidth) / height);
+              height = maxWidth;
+            }
           }
 
           canvas.width = width;
@@ -686,13 +661,14 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
 
           ctx.drawImage(img, 0, 0, width, height);
           
-          // Convert photos/screenshots to JPEG to apply efficient quality compression (<15KB).
-          // Only preserve transparent PNG for files explicitly containing 'logo', 'logo-gpa', 'logo_gpa' or 'marca' in their names, or SVG.
-          const isLogoOrSvg = file.name.toLowerCase().includes('logo') || file.name.toLowerCase().includes('marca') || file.type.includes('svg');
-          const outputType = isLogoOrSvg ? 'image/png' : 'image/jpeg';
-          const finalQuality = isLogoOrSvg ? undefined : quality;
+          // Check if file is logo/icon/brand
+          const isLogoOrSvg = file.name.toLowerCase().includes('logo') || file.name.toLowerCase().includes('marca') || file.type.includes('png') || file.type.includes('svg');
+          let compressedBase64 = canvas.toDataURL(isLogoOrSvg ? 'image/png' : 'image/jpeg', quality);
           
-          const compressedBase64 = canvas.toDataURL(outputType, finalQuality);
+          // If PNG exceeds 150KB, compress to high quality JPEG to prevent storage failures
+          if (compressedBase64.length > 150000) {
+            compressedBase64 = canvas.toDataURL('image/jpeg', 0.65);
+          }
           resolve(compressedBase64);
         };
         img.onerror = (err) => reject(err);
@@ -720,20 +696,33 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
         console.warn('Upload via ImgBB API falhou. A utilizar fallback de otimização local:', e);
       }
     }
-    // Fallback: local compression to Base64
+    // Fallback: local compression to lightweight Base64
     return await compressImage(file);
   };
 
-  // File to cloud/base64 converter helper
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, onComplete: (url: string) => void) => {
+  // File to cloud/base64 converter helper with immediate persistence support for config fields
+  const handleFileUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>, 
+    onComplete: (url: string) => void,
+    autoSaveField?: keyof SiteConfig
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setUploadProgress('A processar e enviar imagem para a nuvem...');
+    setUploadProgress('A carregar e processar imagem...');
     try {
       const resultUrl = await uploadImageCloud(file);
       onComplete(resultUrl);
-      showStatus('Imagem carregada e guardada com sucesso!');
+
+      if (autoSaveField) {
+        const updated = { ...siteConfig, [autoSaveField]: resultUrl };
+        setSiteConfig(updated);
+        await updateSiteConfig({ [autoSaveField]: resultUrl });
+        if (onRefreshSiteData) onRefreshSiteData();
+        showStatus('Imagem carregada e guardada no sistema com sucesso!');
+      } else {
+        showStatus('Imagem carregada com sucesso!');
+      }
     } catch (err) {
       console.error(err);
       showStatus('Erro ao processar imagem', true);
@@ -1021,9 +1010,6 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
       setIsLoading(false);
     }
   };
-
-  const handleEditAdminClick = handleEditAdminUserClick;
-  const handleDeleteAdmin = handleDeleteAdminUserItem;
 
   const handleSaveAdminUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1323,34 +1309,36 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
     try {
       if (editingProduct) {
         // Update existing product
-        await updateStoreProduct(editingProduct.id, {
-          name: prodForm.name,
+        const updatedProduct: StoreProduct = {
+          id: editingProduct.id,
+          name: prodForm.name.trim(),
           category: prodForm.category,
-          price: Number(prodForm.price),
-          minQty: Number(prodForm.minQty),
-          description: prodForm.description,
-          imageUrl: prodForm.imageUrl,
-          badge: prodForm.badge,
-          inStock: prodForm.inStock
-        });
+          price: Number(prodForm.price) || 0,
+          minQty: Number(prodForm.minQty) || 1,
+          description: prodForm.description.trim(),
+          imageUrl: prodForm.imageUrl.trim(),
+          badge: (prodForm.badge || '').trim(),
+          inStock: prodForm.inStock !== false
+        };
+        await updateStoreProduct(editingProduct.id, updatedProduct);
         setStoreProducts((prev) =>
-          prev.map((p) => (p.id === editingProduct.id ? { ...p, ...prodForm } : p))
+          prev.map((p) => (p.id === editingProduct.id ? updatedProduct : p))
         );
-        showStatus('Produto atualizado com sucesso!');
+        showStatus('Produto da loja e imagem atualizados com sucesso!');
       } else {
         // Add new product
         const newProduct = await addStoreProduct({
-          name: prodForm.name,
+          name: prodForm.name.trim(),
           category: prodForm.category,
-          price: Number(prodForm.price),
-          minQty: Number(prodForm.minQty),
-          description: prodForm.description,
-          imageUrl: prodForm.imageUrl,
-          badge: prodForm.badge,
-          inStock: prodForm.inStock
+          price: Number(prodForm.price) || 0,
+          minQty: Number(prodForm.minQty) || 1,
+          description: prodForm.description.trim(),
+          imageUrl: prodForm.imageUrl.trim(),
+          badge: (prodForm.badge || '').trim(),
+          inStock: prodForm.inStock !== false
         });
-        setStoreProducts((prev) => [newProduct, ...prev]);
-        showStatus('Novo produto adicionado à loja online!');
+        setStoreProducts((prev) => [newProduct, ...prev.filter(p => p.id !== newProduct.id)]);
+        showStatus('Novo produto e imagem adicionados à loja online!');
       }
       setIsProductModalOpen(false);
       if (onRefreshSiteData) onRefreshSiteData();
@@ -1574,14 +1562,16 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               </p>
             </div>
 
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-4" autoComplete="off">
               <div>
-                <label className="block text-xs font-mono uppercase text-slate-400 font-bold mb-1.5">Utilizador (Username)</label>
+                <label className="block text-xs font-mono uppercase text-slate-400 font-bold mb-1.5">Utilizador</label>
                 <input
                   type="text"
+                  name="gpa_login_user_field"
+                  autoComplete="off"
                   value={loginUsername}
                   onChange={(e) => setLoginUsername(e.target.value)}
-                  placeholder="admin ou o seu utilizador"
+                  placeholder="Introduza o seu utilizador"
                   className="w-full bg-slate-950 border border-white/15 focus:border-brand-orange rounded-xl px-4 py-3 text-sm text-white focus:outline-none transition-colors placeholder:text-slate-600"
                   required
                 />
@@ -1592,10 +1582,12 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                 <div className="relative">
                   <input
                     type={showLoginPasscode ? "text" : "password"}
+                    name="gpa_login_pass_field"
+                    autoComplete="new-password"
                     value={passcode}
                     onChange={(e) => setPasscode(e.target.value)}
-                    placeholder="Introduza o código de acesso"
-                    className="w-full bg-slate-950 border border-white/15 focus:border-brand-orange rounded-xl pl-4 pr-11 py-3 text-sm text-white focus:outline-none transition-colors"
+                    placeholder="Introduza o seu código de acesso"
+                    className="w-full bg-slate-950 border border-white/15 focus:border-brand-orange rounded-xl pl-4 pr-11 py-3 text-sm text-white focus:outline-none transition-colors placeholder:text-slate-600"
                     required
                   />
                   <button
@@ -1630,39 +1622,6 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                 )}
               </button>
             </form>
-
-            {/* QUICK PRE-SET ACCOUNTS SELECTOR */}
-            <div className="mt-5 pt-4 border-t border-white/10 space-y-2">
-              <span className="text-[10px] font-mono uppercase font-bold text-amber-400 block text-center">
-                Acesso Rápido para a Equipa GPA
-              </span>
-              <div className="grid grid-cols-3 gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => { setLoginUsername('admin'); setPasscode('gpa2026'); }}
-                  className="bg-slate-950/80 hover:bg-slate-800 border border-amber-400/20 hover:border-amber-400/60 p-2 rounded-xl text-center cursor-pointer transition-all"
-                >
-                  <span className="text-[10px] font-bold text-amber-400 block">Principal</span>
-                  <span className="text-[9px] font-mono text-slate-400">admin</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setLoginUsername('gestor'); setPasscode('gpa2026'); }}
-                  className="bg-slate-950/80 hover:bg-slate-800 border border-blue-400/20 hover:border-blue-400/60 p-2 rounded-xl text-center cursor-pointer transition-all"
-                >
-                  <span className="text-[10px] font-bold text-blue-400 block">Gestor Apoio</span>
-                  <span className="text-[9px] font-mono text-slate-400">gestor</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setLoginUsername('comercial 1'); setPasscode('dtp'); }}
-                  className="bg-slate-950/80 hover:bg-slate-800 border border-emerald-400/20 hover:border-emerald-400/60 p-2 rounded-xl text-center cursor-pointer transition-all"
-                >
-                  <span className="text-[10px] font-bold text-emerald-400 block">Comercial</span>
-                  <span className="text-[9px] font-mono text-slate-400">comercial 1</span>
-                </button>
-              </div>
-            </div>
 
             <div className="mt-6 pt-4 border-t border-white/5 text-center">
               <span className="text-[10px] text-slate-500 font-mono">
@@ -2333,7 +2292,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                           <input
                             type="file"
                             accept="image/*"
-                            onChange={(e) => handleFileUpload(e, (base64) => setSiteConfig({ ...siteConfig, aboutImageUrl: base64 }))}
+                            onChange={(e) => handleFileUpload(e, (base64) => setSiteConfig({ ...siteConfig, aboutImageUrl: base64 }), 'aboutImageUrl')}
                             className="hidden"
                           />
                         </label>
@@ -2430,7 +2389,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                           <input
                             type="file"
                             accept="image/*"
-                            onChange={(e) => handleFileUpload(e, (base64) => setSiteConfig({ ...siteConfig, logoUrl: base64 }))}
+                            onChange={(e) => handleFileUpload(e, (base64) => setSiteConfig({ ...siteConfig, logoUrl: base64 }), 'logoUrl')}
                             className="hidden"
                           />
                         </label>
@@ -2473,7 +2432,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                           <input
                             type="file"
                             accept="image/*"
-                            onChange={(e) => handleFileUpload(e, (base64) => setSiteConfig({ ...siteConfig, footerLogoUrl: base64 }))}
+                            onChange={(e) => handleFileUpload(e, (base64) => setSiteConfig({ ...siteConfig, footerLogoUrl: base64 }), 'footerLogoUrl')}
                             className="hidden"
                           />
                         </label>
@@ -2561,7 +2520,12 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                           {siteConfig.bgImageUrl && (
                             <button
                               type="button"
-                              onClick={() => setSiteConfig({ ...siteConfig, bgImageUrl: '' })}
+                              onClick={async () => {
+                                setSiteConfig({ ...siteConfig, bgImageUrl: '' });
+                                await updateSiteConfig({ bgImageUrl: '' });
+                                if (onRefreshSiteData) onRefreshSiteData();
+                                showStatus('Marca d\'água de fundo removida!');
+                              }}
                               className="bg-red-950/40 hover:bg-red-900/50 border border-red-900/30 text-red-300 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-colors cursor-pointer"
                             >
                               Remover
@@ -2573,7 +2537,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                             <input
                               type="file"
                               accept="image/*"
-                              onChange={(e) => handleFileUpload(e, (base64) => setSiteConfig({ ...siteConfig, bgImageUrl: base64 }))}
+                              onChange={(e) => handleFileUpload(e, (base64) => setSiteConfig({ ...siteConfig, bgImageUrl: base64 }), 'bgImageUrl')}
                               className="hidden"
                             />
                           </label>
@@ -5210,7 +5174,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                         <input
                           type="file"
                           accept="image/*"
-                          onChange={(e) => handleFileUpload(e, (base64) => setProdForm({ ...prodForm, imageUrl: base64 }))}
+                          onChange={(e) => handleFileUpload(e, (base64) => setProdForm((prev) => ({ ...prev, imageUrl: base64 })))}
                           className="hidden"
                         />
                       </label>

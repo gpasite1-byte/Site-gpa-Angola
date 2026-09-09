@@ -85,7 +85,7 @@ export async function addTestimonial(testimonial: Testimonial): Promise<void> {
     currentList = [...TESTIMONIALS];
   }
   const updatedList = [testimonial, ...currentList];
-  localStorage.setItem('gpa_testimonials', JSON.stringify(updatedList));
+  try { localStorage.setItem('gpa_testimonials', JSON.stringify(updatedList)); } catch (e) {}
 
   if (!supabase) return;
 
@@ -175,7 +175,7 @@ export async function addQuoteRequest(request: QuoteRequest): Promise<void> {
     }
   }
   const updatedList = [request, ...currentList];
-  localStorage.setItem('gpa_quote_history', JSON.stringify(updatedList));
+  try { localStorage.setItem('gpa_quote_history', JSON.stringify(updatedList)); } catch (e) {}
 
   if (!supabase) return;
 
@@ -206,7 +206,7 @@ export async function addQuoteRequest(request: QuoteRequest): Promise<void> {
  */
 export async function addNewsletterSubscriber(email: string): Promise<void> {
   // Store subscription flag locally
-  localStorage.setItem('gpa_subscribed', 'true');
+  try { localStorage.setItem('gpa_subscribed', 'true'); } catch (e) {}
 
   if (!supabase) return;
 

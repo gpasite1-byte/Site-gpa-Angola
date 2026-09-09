@@ -7,6 +7,7 @@ export interface Service {
   features: string[];
   typicalProducts: string[];
   imageUrl?: string;
+  hoverImageUrl?: string;
   badge?: string;
 }
 

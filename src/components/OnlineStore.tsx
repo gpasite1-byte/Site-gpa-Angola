@@ -324,46 +324,52 @@ export default function OnlineStore({ siteConfig, onOpenQuoteWithDetails, storeP
                     isInCart ? 'border-brand-orange bg-brand-orange/[0.01]' : 'border-slate-200/80'
                   }`}
                 >
-                  {/* Premium Product Image Container - Poytara Style */}
-                  <div className="w-full aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100 relative mb-4">
+                  {/* Premium Product Image Container */}
+                  <div className="w-full aspect-square rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 relative mb-3.5 flex items-center justify-center p-2 group-hover:bg-slate-100/80 transition-colors">
                     <img
-                      src={p.imageUrl || siteConfig?.productImages?.[p.name] || PRODUCT_IMAGES[p.name] || 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80'}
+                      src={p.imageUrl || siteConfig?.productImages?.[p.name] || 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80'}
                       alt={p.name}
-                      className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-108"
+                      className="w-full h-full object-cover rounded-xl transition-transform duration-700 ease-out group-hover:scale-106 shadow-xs"
                       referrerPolicy="no-referrer"
+                      loading="lazy"
                     />
                     {p.badge && (
-                      <span className="absolute top-2.5 left-2.5 bg-brand-orange text-white text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded-full shadow-md z-10">
+                      <span className="absolute top-3 left-3 bg-[#0B63E5] text-white text-[10px] font-akrobat font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-md z-10">
                         {p.badge}
                       </span>
                     )}
-                    <div className="absolute top-2.5 right-2.5 w-8.5 h-8.5 bg-black/40 backdrop-blur-md rounded-xl flex items-center justify-center pointer-events-none transition-colors group-hover:bg-brand-orange/95">
+                    <div className="absolute top-3 right-3 w-8 h-8 bg-slate-900/60 backdrop-blur-md rounded-xl flex items-center justify-center pointer-events-none transition-colors group-hover:bg-[#0B63E5]">
                       <ShoppingBag className="w-4 h-4 text-white" />
                     </div>
                   </div>
 
                   {/* Product Details */}
-                  <div className="space-y-3.5 flex-1 flex flex-col justify-between">
+                  <div className="space-y-3 flex-1 flex flex-col justify-between">
                     <div>
-                      <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-brand-orange bg-brand-orange/10 py-0.5 px-2 rounded-md">
+                      <span className="text-[10px] font-akrobat font-bold uppercase tracking-wider text-[#0B63E5] bg-[#0B63E5]/10 py-0.5 px-2.5 rounded-md">
                         {CATEGORIES.find(c => c.id === p.category)?.label || 'Gráfica'}
                       </span>
-                      <h3 className="font-display font-bold text-sm text-slate-900 mt-2 line-clamp-2 min-h-[40px] leading-snug">
+                      <h3 className="font-akrobat font-black text-lg text-slate-900 mt-2 line-clamp-2 min-h-[44px] leading-tight uppercase">
                         {p.name}
                       </h3>
+                      {p.description && (
+                        <p className="text-xs text-slate-500 font-montserrat line-clamp-2 mt-1 leading-relaxed">
+                          {p.description}
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-1.5 border-t border-slate-100 pt-3">
                       <div className="flex justify-between items-baseline">
-                        <span className="text-[10px] text-slate-400 font-sans">Preço Unitário:</span>
-                        <span className="font-mono font-extrabold text-sm text-brand-purple">
+                        <span className="text-xs text-slate-500 font-montserrat">Preço de Referência:</span>
+                        <span className="font-akrobat font-black text-xl text-slate-900">
                           {p.price > 0 ? `${p.price.toLocaleString('pt-AO')} Kz` : 'Sob Consulta'}
                         </span>
                       </div>
                       
-                      <div className="flex justify-between items-center text-[10px] text-amber-700 bg-amber-50/70 border border-amber-100 px-2 py-1 rounded-lg">
-                        <span className="font-sans font-semibold">Tiragem Mínima Exigida:</span>
-                        <span className="font-mono font-extrabold">{p.minQty.toLocaleString('pt-AO')} un.</span>
+                      <div className="flex justify-between items-center text-xs text-slate-700 bg-slate-50 border border-slate-200/80 px-2.5 py-1.5 rounded-lg font-montserrat">
+                        <span className="font-semibold text-slate-500">Tiragem Mínima:</span>
+                        <span className="font-bold text-[#0B63E5]">{p.minQty.toLocaleString('pt-AO')} un.</span>
                       </div>
                     </div>
                   </div>

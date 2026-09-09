@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
-import { Menu, X, Phone, Calculator, ArrowRight, ChevronDown, MessageSquare } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { 
+  Search, X, Phone, Calculator, ArrowRight, 
+  Instagram, Facebook, Youtube, Mail, MessageSquare, ChevronRight, Linkedin
+} from 'lucide-react';
 
 interface HeaderProps {
   onOpenQuoteCalculator: () => void;
@@ -10,14 +13,21 @@ interface HeaderProps {
   companyPhones?: string[];
 }
 
-export default function Header({ onOpenQuoteCalculator, onScrollToSection, activeSection, logoUrl, companyPhones }: HeaderProps) {
+export default function Header({ 
+  onOpenQuoteCalculator, 
+  onScrollToSection, 
+  activeSection, 
+  logoUrl, 
+  companyPhones = ['+244 923 000 000', '+244 931 000 000']
+}: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isContactsDropdownOpen, setIsContactsDropdownOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 20) {
+      if (window.scrollY > 40) {
         setIsScrolled(true);
       } else {
         setIsScrolled(false);
@@ -28,13 +38,13 @@ export default function Header({ onOpenQuoteCalculator, onScrollToSection, activ
   }, []);
 
   const navItems = [
-    { label: 'Início', id: 'home' },
-    { label: 'Produção Industrial', id: 'production' },
-    { label: 'Sobre Nós', id: 'about' },
-    { label: 'Loja Online', id: 'store' },
-    { label: 'Serviços', id: 'services' },
-    { label: 'Portfólio', id: 'portfolio' },
-    { label: 'Contactos', id: 'contact' },
+    { label: 'INÍCIO', id: 'home' },
+    { label: 'PRODUTOS', id: 'store' },
+    { label: 'SERVIÇOS', id: 'services' },
+    { label: 'PARQUE INDUSTRIAL', id: 'production' },
+    { label: 'QUEM SOMOS', id: 'about' },
+    { label: 'PORTFÓLIO', id: 'portfolio' },
+    { label: 'CONTACTO', id: 'contact' },
   ];
 
   const handleNavClick = (id: string) => {
@@ -42,255 +52,297 @@ export default function Header({ onOpenQuoteCalculator, onScrollToSection, activ
     setIsMobileMenuOpen(false);
   };
 
+  const primaryPhone = companyPhones[0] || '+244 923 000 000';
+  const cleanPhone = primaryPhone.replace(/\D/g, '');
+
   return (
-    <header
-      id="main-header"
-      className={`fixed top-0 left-0 w-full z-40 transition-all duration-500 ${
-        isScrolled
-          ? 'bg-white/95 backdrop-blur-xl shadow-[0_12px_40px_rgba(15,23,42,0.08)] py-3 text-slate-800 border-b border-slate-200/70'
-          : 'bg-gradient-to-b from-slate-950/95 via-slate-950/70 to-transparent backdrop-blur-md py-4 text-white'
-      }`}
-    >
-      <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between">
-
-          <div
-            id="header-logo"
-            className="flex items-center space-x-3 cursor-pointer"
-            onClick={() => handleNavClick('home')}
-          >
-            <motion.div 
-              className="relative flex items-center justify-start w-40 h-12 sm:w-56 sm:h-16 md:w-72 md:h-20 lg:w-[400px] lg:h-26 bg-transparent"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
+    <header id="js-header" className="sticky top-0 left-0 w-full z-50 transition-all duration-300">
+      {/* ===================================================================
+          PASSO 03: TOPBAR (ESTILO POYTARA ORIGINAL)
+          =================================================================== */}
+      <div className="topbar" id="js-topbar">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between">
+            {/* Pesquisar */}
+            <div 
+              className="searchGroupH"
+              onClick={() => setIsSearchOpen(true)}
+              title="Pesquisar Serviços ou Produtos"
             >
-              {/* Animated glow background for logo */}
-              <motion.div
-                className="absolute inset-0 rounded-3xl bg-gradient-to-r from-brand-orange/0 via-brand-orange/25 to-amber-400/0 blur-3xl"
-                animate={{
-                  opacity: [0.4, 0.8, 0.4],
-                  scale: [0.95, 1.1, 0.95]
-                }}
-                transition={{
-                  duration: 3.5,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-              />
-              
-              {/* Main logo image */}
-              <motion.img
-                src={logoUrl || "https://i.ibb.co/v6FWV57q/LOGO-GPA.png"}
-                alt="GPA Angola"
-                className="relative w-full h-full object-contain object-left"
-                referrerPolicy="no-referrer"
-                animate={{
-                  y: [0, -8, 0],
-                  filter: [
-                    "drop-shadow(0 10px 25px rgba(17,13,34,0.1))",
-                    "drop-shadow(0 20px 40px rgba(245,158,11,0.3))",
-                    "drop-shadow(0 10px 25px rgba(17,13,34,0.1))"
-                  ]
-                }}
-                transition={{
-                  duration: 4,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-              />
-            </motion.div>
-          </div>
-
-          <nav id="desktop-nav" className="hidden lg:flex items-center space-x-6 xl:space-x-8 font-display font-semibold">
-            {navItems.map((item, index) => (
-              <button
-                key={item.id}
-                onClick={() => handleNavClick(item.id)}
-                style={index === 0 ? { fontWeight: '800' } : undefined}
-                className={`relative py-2 text-[12px] xl:text-[13px] uppercase tracking-[0.18em] transition-all duration-300 cursor-pointer whitespace-nowrap ${
-                  activeSection === item.id
-                    ? 'text-brand-orange font-extrabold'
-                    : isScrolled
-                    ? 'text-slate-700 hover:text-brand-orange font-bold'
-                    : 'text-slate-100 hover:text-brand-orange font-bold drop-shadow-sm'
-                }`}
-              >
-                {item.label}
-                {activeSection === item.id && (
-                  <span className="absolute -bottom-1 left-0 w-full h-0.5 rounded-full bg-gradient-to-r from-brand-orange via-amber-400 to-brand-gold"></span>
-                )}
-              </button>
-            ))}
-          </nav>
-
-          <div className="hidden sm:flex items-center space-x-6">
-            <div
-              className="relative"
-              onMouseEnter={() => setIsContactsDropdownOpen(true)}
-              onMouseLeave={() => setIsContactsDropdownOpen(false)}
-            >
-              <button
-                onClick={() => setIsContactsDropdownOpen(!isContactsDropdownOpen)}
-                className={`flex items-center space-x-2 text-xs font-mono font-bold tracking-wider uppercase py-2 px-3.5 rounded-xl transition-all cursor-pointer border ${
-                  isScrolled
-                    ? 'bg-slate-100 text-slate-800 border-slate-200 hover:border-brand-orange/40 hover:bg-brand-orange/5'
-                    : 'bg-white/10 text-white border-white/20 hover:bg-white/20 hover:border-brand-orange/60 backdrop-blur-md'
-                }`}
-              >
-                <Phone className="w-3.5 h-3.5 text-brand-orange" />
-                <span>Contactos</span>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isContactsDropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
-
-              {/* Contacts Dropdown */}
-              {isContactsDropdownOpen && (
-                <div className="absolute right-0 top-full mt-2 w-72 bg-slate-900/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-slate-800 p-3 space-y-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                  <span className="text-[10px] font-mono font-extrabold uppercase tracking-[0.2em] text-amber-400 block px-2 pt-1">
-                    Linhas Diretas GPA
-                  </span>
-                  {(() => {
-                    const labels = ["Comercial", "Orçamentos", "Produção", "Geral"];
-                    const phones = companyPhones && companyPhones.length > 0
-                      ? companyPhones
-                      : ['+244 945 119 409', '+244 933 417 569', '+244 953 979 343', '+244 994 943 828'];
-
-                    return phones.map((phone, idx) => {
-                      const cleaned = phone.replace(/\s+/g, '');
-                      const label = labels[idx] || "Atendimento";
-                      return (
-                        <div key={phone} className="flex items-center justify-between p-2 rounded-xl bg-slate-950/80 border border-slate-800 hover:border-brand-orange/40 transition-colors group">
-                          <div>
-                            <span className="text-[9px] uppercase font-mono text-slate-400 font-bold block">{label}</span>
-                            <span className="text-xs font-mono font-bold text-white group-hover:text-brand-orange transition-colors">{phone}</span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <a
-                              href={`tel:${cleaned}`}
-                              className="p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-brand-orange transition-colors"
-                              title="Ligar"
-                            >
-                              <Phone className="w-3 h-3" />
-                            </a>
-                            <a
-                              href={`https://wa.me/${cleaned.replace('+', '').replace(/\s+/g, '')}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="p-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all"
-                              title="WhatsApp"
-                            >
-                              <MessageSquare className="w-3 h-3" />
-                            </a>
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()}
-                </div>
-              )}
+              <Search className="w-4 h-4 text-[#0B63E5]" />
+              <span className="text-[13px] font-medium tracking-wide">Pesquisar GPA Angola</span>
             </div>
 
-            <button
-              onClick={onOpenQuoteCalculator}
-              className="bg-gradient-to-r from-brand-orange to-amber-500 hover:brightness-110 text-white text-xs font-bold uppercase tracking-wider py-2.5 px-4 rounded-xl shadow-[0_10px_25px_rgba(245,158,11,0.35)] flex items-center space-x-2 cursor-pointer transition-all transform hover:scale-[1.02]"
-            >
-              <Calculator className="w-4 h-4" />
-              <span>Simular Preço</span>
-              <ArrowRight className="w-3.5 h-3.5 opacity-70" />
-            </button>
-          </div>
-
-          {/* MOBILE TOGGLE & ACTION */}
-          <div className="lg:hidden flex items-center space-x-2">
-            <button
-              onClick={onOpenQuoteCalculator}
-              className="p-2.5 rounded-xl bg-gradient-to-r from-brand-orange to-amber-400 text-white shadow-[0_10px_20px_rgba(245,158,11,0.35)] cursor-pointer active:scale-95"
-              title="Solicitar Orçamento"
-            >
-              <Calculator className="w-4.5 h-4.5" />
-            </button>
-
-            <button
-              id="mobile-menu-toggle"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className={`p-2.5 rounded-xl transition-all cursor-pointer border ${
-                isScrolled 
-                  ? 'text-slate-800 bg-slate-100 border-slate-200 hover:bg-slate-200' 
-                  : 'text-white bg-slate-900/80 border-slate-800 hover:bg-slate-800'
-              }`}
-            >
-              {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
-
-        </div>
-      </div>
-
-      {isMobileMenuOpen && (
-        <div
-          id="mobile-drawer"
-          className="lg:hidden absolute top-full left-0 w-full bg-slate-950/98 backdrop-blur-2xl shadow-[0_25px_50px_rgba(0,0,0,0.7)] border-t border-slate-800 py-5 px-6 max-h-[85vh] overflow-y-auto"
-        >
-          <div className="flex flex-col space-y-2">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => handleNavClick(item.id)}
-                className={`w-full text-left py-3 px-4 rounded-xl text-sm font-bold transition-all cursor-pointer border ${
-                  activeSection === item.id
-                    ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white border-amber-400/40 shadow-lg'
-                    : 'text-slate-100 bg-slate-900/70 border-slate-800/80 hover:bg-slate-800 hover:text-white'
-                }`}
+            {/* WhatsApp + Botão Compre / Orçamento */}
+            <div className="flex items-center space-x-5">
+              <a 
+                href={`https://wa.me/${cleanPhone}?text=Ol%C3%A1%20GPA%20Angola%2C%20gostaria%20de%20informa%C3%A7%C3%B5es%20sobre%20os%20vossos%20servi%C3%A7os.`} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="whats-link hidden sm:inline-flex items-center gap-2 text-slate-700 hover:text-[#0B63E5] text-[13.5px] font-semibold transition-colors"
+                title="Clique para falar conosco no WhatsApp"
               >
-                {item.label}
-              </button>
-            ))}
+                <div className="w-4.5 h-4.5 bg-[#25D366] text-white rounded-full flex items-center justify-center p-0.5 shadow-sm">
+                  <MessageSquare className="w-3 h-3 fill-current" />
+                </div>
+                <span>{primaryPhone}</span>
+              </a>
 
-            <div className="border-t border-slate-800/80 pt-4 mt-3 space-y-2.5">
-              <span className="text-[10px] font-mono font-extrabold uppercase tracking-[0.2em] text-amber-400 block px-2">
-                Linhas Diretas de Atendimento
-              </span>
-              <div className="space-y-2">
-                {(() => {
-                  const labels = ["Comercial", "Orçamentos", "Produção", "Geral"];
-                  const phones = companyPhones && companyPhones.length > 0
-                    ? companyPhones
-                    : ['+244 945 119 409', '+244 933 417 569', '+244 953 979 343', '+244 994 943 828'];
-
-                  return phones.map((phone, idx) => {
-                    const cleaned = phone.replace(/\s+/g, '');
-                    const label = labels[idx] || "Atendimento";
-                    return (
-                      <div key={phone} className="flex items-center justify-between py-2 px-3.5 rounded-xl bg-slate-900 border border-slate-800">
-                        <div className="text-left">
-                          <span className="text-[9px] uppercase font-mono text-slate-400 font-bold block">{label}</span>
-                          <span className="text-xs font-mono font-bold text-white">{phone}</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <a
-                            href={`tel:${cleaned}`}
-                            className="p-2 rounded-lg bg-slate-800 border border-slate-700 text-white hover:text-brand-orange transition-colors"
-                          >
-                            <Phone className="w-3.5 h-3.5" />
-                          </a>
-                          <a
-                            href={`https://wa.me/${cleaned.replace('+', '').replace(/\s+/g, '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-2 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-colors"
-                          >
-                            <MessageSquare className="w-3.5 h-3.5" />
-                          </a>
-                        </div>
-                      </div>
-                    );
-                  });
-                })()}
+              <div className="shop-modal">
+                <div 
+                  onClick={onOpenQuoteCalculator}
+                  className="buy-button"
+                  title="Calcular Orçamento Online"
+                >
+                  Pedir Orçamento
+                </div>
               </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* ===================================================================
+          BOTTOMBAR / BARRA DE NAVEGAÇÃO PRINCIPAL (Fundo Branco Translúcido)
+          =================================================================== */}
+      <div 
+        id="bottombar"
+        className={`w-full transition-all duration-300 ${
+          isScrolled 
+            ? 'bg-white/95 backdrop-blur-md shadow-lg py-2 border-b border-slate-200/90' 
+            : 'bg-white/90 backdrop-blur-md py-3.5 border-b border-slate-200/80 shadow-sm'
+        }`}
+      >
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="nav-bar" id="dnavbar">
+            
+            {/* LOGOTIPO AMPLIADO (Tamanho Grande & Destaque Total no Fundo Claro) */}
+            <div 
+              className="logo cursor-pointer flex items-center py-1"
+              onClick={() => handleNavClick('home')}
+            >
+              <img 
+                src={logoUrl || "https://i.ibb.co/v6FWV57q/LOGO-GPA.png"} 
+                alt="Logo Website GPA Angola" 
+                className="h-20 sm:h-24 md:h-28 lg:h-32 w-auto max-w-[380px] object-contain transition-transform duration-300 hover:scale-105"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+
+            {/* NAV MENU (POYTARA ORIGINAL) */}
+            <nav className="hidden lg:block">
+              <ul id="nav-menu">
+                {navItems.map((item) => (
+                  <li key={item.id}>
+                    <button
+                      onClick={() => handleNavClick(item.id)}
+                      className={`nav-link-poytara ${
+                        activeSection === item.id ? '!text-[#0B63E5] font-black' : ''
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  </li>
+                ))}
+
+                <li>
+                  <button 
+                    onClick={() => handleNavClick('partner')}
+                    className="menuButtonStyle"
+                  >
+                    Seja um Parceiro
+                  </button>
+                </li>
+
+                <li>
+                  <button 
+                    onClick={onOpenQuoteCalculator}
+                    className="menuButtonStyle"
+                  >
+                    Calculadora
+                  </button>
+                </li>
+              </ul>
+            </nav>
+
+            {/* ICONS NAV (POYTARA ORIGINAL) */}
+            <div className="hidden lg:flex items-center icons-nav">
+              <button 
+                onClick={() => setIsSearchOpen(true)}
+                title="Busque pelos produtos ou serviços GPA"
+              >
+                <Search className="w-5 h-5" />
+              </button>
+
+              <a 
+                href="https://www.instagram.com/gpa_angola/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                title="Instagram GPA Angola (@gpa_angola)"
+              >
+                <Instagram className="w-5 h-5" />
+              </a>
+
+              <a 
+                href="https://www.facebook.com/facegpaangola" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                title="Facebook GPA Angola"
+              >
+                <Facebook className="w-5 h-5" />
+              </a>
+
+              <a 
+                href="https://ao.linkedin.com/company/gpa-angola" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                title="LinkedIn GPA Angola"
+              >
+                <Linkedin className="w-5 h-5" />
+              </a>
+
+              <a 
+                href="https://www.youtube.com/@GPA-ANGOLA" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                title="YouTube GPA Angola (@GPA-ANGOLA)"
+              >
+                <Youtube className="w-5 h-5" />
+              </a>
+
+              <a 
+                href="mailto:contacto@gpaangola.com" 
+                title="Fale com a GPA Angola por E-mail"
+              >
+                <Mail className="w-5 h-5" />
+              </a>
+            </div>
+
+            {/* Mobile Hamburger Trigger */}
+            <div className="flex lg:hidden items-center space-x-3 text-white">
+              <button 
+                onClick={() => setIsSearchOpen(true)}
+                className="p-1.5"
+              >
+                <Search className="w-6 h-6" />
+              </button>
+
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="p-1.5"
+                aria-label="Abrir Menu"
+              >
+                {isMobileMenuOpen ? <X className="w-7 h-7" /> : (
+                  <div className="space-y-1.5 w-6">
+                    <span className="block h-0.5 w-6 bg-white"></span>
+                    <span className="block h-0.5 w-6 bg-white"></span>
+                    <span className="block h-0.5 w-4 bg-white"></span>
+                  </div>
+                )}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      {/* ===================================================================
+          SEARCH BAR POPUP / OVERLAY (Poytara Style)
+          =================================================================== */}
+      <AnimatePresence>
+        {isSearchOpen && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="w-full bg-[#111111] border-b border-[#075b2d] text-white py-4 px-4 sm:px-8 shadow-2xl z-50"
+          >
+            <div className="max-w-[1000px] mx-auto flex items-center gap-4">
+              <Search className="w-6 h-6 text-[#09ac53]" />
+              <input 
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Qual serviço ou produto GPA você deseja?"
+                className="w-full bg-transparent border-none text-white text-lg focus:outline-none placeholder:text-neutral-400 font-montserrat"
+                autoFocus
+              />
+              <button 
+                onClick={() => setIsSearchOpen(false)}
+                className="text-neutral-400 hover:text-white p-1"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ===================================================================
+          MOBILE DRAWER MENU (Poytara overlay style)
+          =================================================================== */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-40 lg:hidden"
+            />
+            <motion.div 
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'tween', duration: 0.3 }}
+              className="fixed top-0 left-0 bottom-0 w-[85%] max-w-[340px] bg-[#0a0a0a] text-white z-50 p-6 flex flex-col justify-between shadow-2xl border-r border-[#075b2d]/40 lg:hidden"
+            >
+              <div>
+                <div className="flex items-center justify-between pb-6 border-b border-white/10">
+                  <img 
+                    src={logoUrl || "https://i.ibb.co/v6FWV57q/LOGO-GPA.png"} 
+                    alt="GPA Angola" 
+                    className="h-14 w-auto object-contain"
+                  />
+                  <button 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="p-2 text-neutral-400 hover:text-white rounded-lg bg-white/5"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                <div className="py-6 space-y-2">
+                  {navItems.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => handleNavClick(item.id)}
+                      className="w-full text-left font-akrobat text-xl uppercase tracking-wider font-extrabold py-2.5 px-3 rounded hover:bg-white/5 hover:text-[#09ac53] transition-colors flex items-center justify-between"
+                    >
+                      <span>{item.label}</span>
+                      <ChevronRight className="w-4 h-4 text-neutral-500" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-6 border-t border-white/10">
+                <button 
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    onOpenQuoteCalculator();
+                  }}
+                  className="w-full bg-[#075b2d] hover:bg-[#09ac53] text-white font-akrobat text-xl uppercase font-black py-3 rounded shadow-lg transition-all flex items-center justify-center gap-2"
+                >
+                  <Calculator className="w-5 h-5" />
+                  <span>Pedir Orçamento</span>
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </header>
   );
 }

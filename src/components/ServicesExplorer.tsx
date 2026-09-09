@@ -12,222 +12,255 @@ interface ServicesExplorerProps {
 export default function ServicesExplorer({ onOpenQuoteCalculatorWithService }: ServicesExplorerProps) {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [liveServices, setLiveServices] = useState<Service[]>(SERVICES);
+  const [modalImageIndex, setModalImageIndex] = useState<number>(0);
 
   useEffect(() => {
     getServicesData().then(data => {
       if (data && data.length > 0) {
-        setLiveServices(data);
+        const merged = data.map(service => {
+          const localMatch = SERVICES.find(s => s.id === service.id);
+          return {
+            ...service,
+            imageUrl: localMatch?.imageUrl || service.imageUrl,
+            hoverImageUrl: localMatch?.hoverImageUrl || service.hoverImageUrl,
+          };
+        });
+        setLiveServices(merged);
       }
     });
   }, []);
 
-  // Dynamic Lucide Icon Resolver
-  const renderIcon = (iconName: string, className: string = "w-6 h-6") => {
-    const IconComp = (Icons as any)[iconName];
-    if (IconComp) {
-      return <IconComp className={className} />;
-    }
-    return <Icons.HelpCircle className={className} />;
+  const handleOpenModal = (service: Service) => {
+    setSelectedService(service);
+    setModalImageIndex(0);
   };
 
   return (
-    <section id="services" className="relative pt-32 sm:pt-36 md:pt-44 lg:pt-48 pb-20 overflow-hidden border-t border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(245,158,11,0.10),transparent_25%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.10),transparent_20%),linear-gradient(135deg,#fffaf5_0%,#f5f7ff_35%,#f9fafb_100%)] text-slate-800 scroll-mt-28">
-      <div className="absolute inset-0 bg-[linear-gradient(transparent_0%,rgba(17,13,34,0.02)_100%)]"></div>
-      <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-
-        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            className="inline-block text-[11px] font-mono font-bold tracking-[0.24em] text-brand-orange uppercase bg-white/70 px-4 py-2 rounded-full border border-brand-orange/15 shadow-[0_10px_24px_rgba(245,158,11,0.12)]"
-          >
-            Capabilities & Produção Industrial
-          </motion.div>
-
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-extrabold tracking-[-0.04em] text-brand-purple">
-            O Que Produzimos Com Excelência
-          </h2>
-
-          <p className="text-base sm:text-lg text-slate-600 font-sans leading-relaxed">
-            Conheça a nossa capacidade técnica e parque de máquinas. Clique em qualquer setor de produção para explorar os equipamentos, produtos finais e solicitar orçamento direto.
-          </p>
+    <section id="services" className="t-block py-16 bg-white">
+      <div className="max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* ===================================================================
+            POYTARA T-BLOCK TITLE (EXACT POYTARA SPEC)
+            =================================================================== */}
+        <div className="mb-8 text-center">
+          <h1>SERVIÇOS EM <span>DESTAQUE</span></h1>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {liveServices.map((service, idx) => {
-            const isSelected = selectedService?.id === service.id;
-            return (
-              <motion.div
-                key={service.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: idx * 0.05 }}
-                onClick={() => setSelectedService(isSelected ? null : service)}
-                className={`group relative rounded-[28px] border cursor-pointer transition-all duration-300 overflow-hidden backdrop-blur-md ${
-                  isSelected
-                    ? 'border-brand-orange/50 bg-white shadow-[0_25px_50px_rgba(17,13,34,0.15)] scale-[1.01] z-10'
-                    : 'border-slate-200/80 bg-white/80 shadow-[0_16px_32px_rgba(15,23,42,0.05)] hover:shadow-[0_22px_42px_rgba(17,13,34,0.12)] hover:border-brand-orange/30 hover:-translate-y-1'
-                }`}
-              >
-                {/* Header Photo Container */}
-                <div className="relative h-44 w-full overflow-hidden bg-slate-900">
-                  <img
-                    src={service.imageUrl || 'https://images.unsplash.com/photo-1562654501-a0ccc0fc3fb1?auto=format&fit=crop&w=800&q=80'}
-                    alt={service.title}
-                    className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 opacity-85"
-                    referrerPolicy="no-referrer"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent" />
-                  
-                  {/* Badge */}
-                  {service.badge && (
-                    <div className="absolute top-3.5 left-3.5">
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-brand-orange/90 text-white shadow-md backdrop-blur-md">
+        {/* ===================================================================
+            POYTARA INITIAL-PRODUCTS GRID (EXACT POYTARA SPEC & GPA ASSETS)
+            =================================================================== */}
+        <div className="initial-products">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+            {liveServices.map((service) => (
+              <div key={service.id} className="col-prod">
+                <div 
+                  className="box-product group"
+                  onClick={() => handleOpenModal(service)}
+                >
+                  {/* Exact Poytara Box Background */}
+                  <div className="box-bg">
+                    
+                    {/* Poytara Signature Corner Fold Ribbon */}
+                    <div className="absolute top-0 left-0 w-11 h-11 bg-gradient-to-br from-[#767676] to-[#555555] rounded-br-[100%] z-20 shadow-sm pointer-events-none group-hover:from-[#0B63E5] group-hover:to-[#0052CC] transition-all duration-300 opacity-90 group-hover:opacity-100" />
+
+                    {/* Badge Poytara Style if present */}
+                    {service.badge && (
+                      <div className="absolute top-3 right-3 z-30 bg-slate-900/90 group-hover:bg-[#0B63E5] text-white px-2.5 py-1 rounded text-[11px] font-akrobat uppercase font-black tracking-wider shadow-sm transition-colors duration-300">
                         {service.badge}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Floating Icon */}
-                  <div className={`absolute bottom-3 right-3.5 w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${
-                    isSelected
-                      ? 'bg-brand-orange text-white shadow-lg scale-110'
-                      : 'bg-white/90 text-slate-900 group-hover:bg-brand-orange group-hover:text-white shadow-md'
-                  }`}>
-                    {renderIcon(service.iconName, 'w-5 h-5 stroke-[2.2]')}
-                  </div>
-                </div>
-
-                {/* Card Content Body */}
-                <div className="p-5 space-y-2.5">
-                  <h3 className="text-lg font-display font-black text-brand-purple group-hover:text-brand-orange transition-colors">
-                    {service.title}
-                  </h3>
-
-                  <p className="text-xs sm:text-sm text-slate-600 font-sans leading-relaxed line-clamp-2">
-                    {service.description}
-                  </p>
-
-                  <div className="pt-2 flex items-center justify-between border-t border-slate-100 text-xs font-semibold text-brand-orange font-mono">
-                    <span className="flex items-center space-x-1.5 group-hover:translate-x-1 transition-transform">
-                      <span>{isSelected ? 'Ocultar detalhes' : 'Ver especialidades'}</span>
-                      <Icons.ArrowRight className="w-3.5 h-3.5" />
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-mono">GPA Industrial</span>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-
-        {/* Dynamic Detail Panel (Displays when a service is clicked) */}
-        <AnimatePresence mode="wait">
-          {selectedService && (
-            <motion.div
-              key={selectedService.id}
-              initial={{ opacity: 0, height: 0, marginTop: 0 }}
-              animate={{ opacity: 1, height: 'auto', marginTop: 32 }}
-              exit={{ opacity: 0, height: 0, marginTop: 0 }}
-              transition={{ duration: 0.4, ease: 'easeInOut' }}
-              className="overflow-hidden"
-            >
-              <div className="bg-white text-slate-800 rounded-3xl p-6 sm:p-8 md:p-10 shadow-xl relative border border-slate-200/80">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-brand-orange/5 rounded-full blur-3xl pointer-events-none"></div>
-
-                <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                  
-                  {/* Left Column: Full Bio, Image & Features */}
-                  <div className="lg:col-span-7 space-y-6">
-                    <div className="flex items-center space-x-4">
-                      <div className="p-3.5 rounded-2xl bg-brand-orange text-white shadow-md">
-                        {renderIcon(selectedService.iconName, 'w-7 h-7 stroke-[2.2]')}
                       </div>
-                      <div>
-                        <span className="text-xs font-mono text-brand-orange font-bold uppercase tracking-wider">Setor Industrial GPA</span>
-                        <h3 className="text-2xl sm:text-3xl font-display font-extrabold mt-0.5 text-brand-purple">{selectedService.title}</h3>
-                      </div>
-                    </div>
+                    )}
 
-                    {/* Featured Large Image Banner */}
-                    <div className="relative h-56 sm:h-64 rounded-2xl overflow-hidden shadow-md border border-slate-100 group">
-                      <img
-                        src={selectedService.imageUrl || 'https://images.unsplash.com/photo-1562654501-a0ccc0fc3fb1?auto=format&fit=crop&w=1000&q=80'}
-                        alt={selectedService.title}
-                        className="w-full h-full object-cover"
-                        referrerPolicy="no-referrer"
+                    {/* Primary Product Image (Large 380px object-contain) */}
+                    <img 
+                      src={service.imageUrl} 
+                      alt={service.title} 
+                      className="product img-fluid"
+                      loading="lazy" 
+                    />
+
+                    {/* Secondary Hover Highlight Image (.feed) */}
+                    {service.hoverImageUrl && (
+                      <img 
+                        src={service.hoverImageUrl} 
+                        alt={`${service.title} em Destaque`} 
+                        className="feed img-fluid" 
+                        loading="lazy" 
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
-                      <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white">
-                        <span className="text-xs font-mono font-bold uppercase tracking-widest bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
-                          {selectedService.badge || 'Capacidade Industrial'}
-                        </span>
-                        <span className="text-[11px] font-sans text-slate-200">Garantia GPA Angola</span>
-                      </div>
+                    )}
+
+                    {/* Poytara Signature Circular Background with Zoom Animation */}
+                    <div className="circle-bg">
+                      <img 
+                        src={service.hoverImageUrl || service.imageUrl} 
+                        alt="" 
+                        className="iframe-dynamic img-fluid" 
+                        loading="lazy" 
+                      />
                     </div>
 
-                    <p className="text-base text-slate-600 font-sans leading-relaxed">
-                      {selectedService.fullDescription}
-                    </p>
-
-                    {/* Features checklist */}
-                    <div className="space-y-3 pt-2">
-                      <h4 className="text-sm font-mono font-bold tracking-wider text-brand-orange uppercase">Vantagens & Capacidades</h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {selectedService.features.map((feature, i) => (
-                          <div key={i} className="flex items-start space-x-2.5">
-                            <Icons.CheckCircle2 className="w-4.5 h-4.5 text-brand-orange flex-shrink-0 mt-0.5" />
-                            <span className="text-sm text-slate-700 font-sans">{feature}</span>
-                          </div>
-                        ))}
-                      </div>
+                    {/* Poytara Search Icon */}
+                    <div className="absolute bottom-3 right-3 z-30 flex items-center justify-center w-8 h-8 rounded-full bg-white/95 group-hover:bg-[#0B63E5] group-hover:text-white text-slate-700 shadow-sm group-hover:shadow-md transition-all duration-300 transform group-hover:scale-110">
+                      <Icons.Search className="w-4 h-4 stroke-[2.2]" />
                     </div>
                   </div>
 
-                  {/* Right Column: Typical Products List & Quote Call */}
-                  <div className="lg:col-span-5 bg-brand-purple-light/50 border border-slate-200 rounded-2xl p-6 space-y-6 shadow-xs">
-                    <div className="space-y-3">
-                      <h4 className="text-sm font-mono font-bold tracking-wider text-brand-orange uppercase flex items-center space-x-2">
-                        <Icons.ShoppingBag className="w-4 h-4" />
-                        <span>Produtos Mais Solicitados</span>
-                      </h4>
-                      <ul className="space-y-2.5">
-                        {selectedService.typicalProducts.map((prod, i) => (
-                          <li key={i} className="flex items-center space-x-3 text-sm text-slate-700 font-medium">
-                            <span className="w-2 h-2 rounded-full bg-brand-orange"></span>
-                            <span>{prod}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div className="border-t border-slate-100 pt-5 flex flex-col space-y-3">
-                      <p className="text-xs text-slate-500 font-sans">
-                        Necessita de um produto personalizado ou quer discutir uma tiragem especial? Fale directamente com a nossa equipa industrial de produção.
-                      </p>
-                      
-                      <button
-                        onClick={() => onOpenQuoteCalculatorWithService(selectedService.id)}
-                        className="w-full flex items-center justify-center space-x-2 bg-brand-orange hover:bg-brand-orange-hover text-white py-3.5 px-5 rounded-xl font-display font-bold text-sm shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
-                      >
-                        <Icons.Calculator className="w-4.5 h-4.5" />
-                        <span>Simular Orçamento para {selectedService.title}</span>
-                      </button>
-                    </div>
+                  {/* Description Box (Poytara .box-dsc) */}
+                  <div className="box-dsc">
+                    <h2>{service.title}</h2>
+                    <p>{service.description}</p>
                   </div>
-
                 </div>
-
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            ))}
+          </div>
+        </div>
 
       </div>
+
+      {/* ===================================================================
+          SERVICE DETAIL MODAL
+          =================================================================== */}
+      <AnimatePresence>
+        {selectedService && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedService(null)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            />
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative bg-white text-slate-900 w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden z-10 border border-slate-200 max-h-[90vh] flex flex-col"
+            >
+              {/* Modal Header */}
+              <div className="bg-slate-950 text-white px-6 py-4 flex items-center justify-between border-b border-white/10">
+                <h3 className="font-akrobat text-2xl uppercase font-black tracking-wide text-white leading-none">
+                  {selectedService.title}
+                </h3>
+
+                <button
+                  onClick={() => setSelectedService(null)}
+                  className="p-1 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+                >
+                  <Icons.X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6 overflow-y-auto space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                  <div className="space-y-3">
+                    <div className="h-64 rounded-xl overflow-hidden border border-slate-200 shadow-md bg-slate-900 relative">
+                      <img
+                        src={modalImageIndex === 1 && selectedService.hoverImageUrl ? selectedService.hoverImageUrl : selectedService.imageUrl}
+                        alt={selectedService.title}
+                        className="w-full h-full object-cover transition-all duration-300"
+                      />
+                    </div>
+
+                    {/* Dual Thumbnail Switcher */}
+                    {selectedService.hoverImageUrl && (
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => setModalImageIndex(0)}
+                          className={`flex-1 py-2 px-3 rounded-lg border text-xs font-akrobat uppercase font-bold transition-all cursor-pointer ${
+                            modalImageIndex === 0 
+                              ? 'bg-[#0B63E5] text-white border-[#0B63E5] shadow-sm' 
+                              : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+                          }`}
+                        >
+                          Foto 1 (Principal)
+                        </button>
+                        <button 
+                          onClick={() => setModalImageIndex(1)}
+                          className={`flex-1 py-2 px-3 rounded-lg border text-xs font-akrobat uppercase font-bold transition-all cursor-pointer ${
+                            modalImageIndex === 1 
+                              ? 'bg-[#0B63E5] text-white border-[#0B63E5] shadow-sm' 
+                              : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+                          }`}
+                        >
+                          Foto 2 (LED Iluminado)
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                    <span className="inline-block text-xs font-akrobat font-black tracking-widest text-[#0B63E5] uppercase bg-[#0B63E5]/10 px-2.5 py-0.5 rounded">
+                      {selectedService.badge || 'GPA Industrial'}
+                    </span>
+                    <h4 className="font-akrobat text-2xl uppercase font-black text-slate-900 leading-tight">
+                      Visão Geral da Produção
+                    </h4>
+                    <p className="text-slate-600 font-montserrat text-sm leading-relaxed">
+                      {selectedService.fullDescription || selectedService.description}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Features List */}
+                {selectedService.features && selectedService.features.length > 0 && (
+                  <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <h4 className="font-akrobat text-lg uppercase font-bold text-slate-900">
+                      Diferenciais & Acabamentos
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {selectedService.features.map((feature, i) => (
+                        <div key={i} className="flex items-center space-x-2 text-xs sm:text-sm font-montserrat text-slate-700">
+                          <Icons.CheckCircle2 className="w-4 h-4 text-[#0B63E5] shrink-0" />
+                          <span>{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Typical Products List */}
+                {selectedService.typicalProducts && selectedService.typicalProducts.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="font-akrobat text-base uppercase font-bold text-slate-800">
+                      Aplicações Comuns:
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedService.typicalProducts.map((prod, i) => (
+                        <span key={i} className="px-3 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-montserrat font-medium border border-slate-200">
+                          {prod}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex flex-wrap items-center justify-between gap-4">
+                <button
+                  onClick={() => setSelectedService(null)}
+                  className="text-slate-600 hover:text-slate-900 font-montserrat text-sm font-semibold cursor-pointer"
+                >
+                  Fechar Janela
+                </button>
+
+                <button
+                  onClick={() => {
+                    const id = selectedService.id;
+                    setSelectedService(null);
+                    onOpenQuoteCalculatorWithService(id);
+                  }}
+                  className="bg-gradient-to-r from-[#0052CC] to-[#0B63E5] hover:from-[#0B63E5] hover:to-[#0052CC] text-white font-akrobat text-lg uppercase font-black px-7 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
+                >
+                  Simular Cotação Agora
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
-

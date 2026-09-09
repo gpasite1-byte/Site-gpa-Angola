@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Play, Pause, Volume2, ShieldAlert, Check, Users, Sparkles, 
-  MapPin, Clock, ArrowRight, HelpCircle, X, Award, Eye, Settings, Video, FileVideo, Building2
+  MapPin, Clock, ArrowRight, HelpCircle, X, Award, Eye, Settings, Video, FileVideo, Building2,
+  Phone, Mail, Send, Calculator, MessageSquare
 } from 'lucide-react';
 
 // Data and Types
@@ -23,6 +24,8 @@ import IndustrialGalleryModal from './components/IndustrialGalleryModal';
 import AdminDashboard from './components/AdminDashboard';
 import OnlineStore from './components/OnlineStore';
 import IntroScreen from './components/IntroScreen';
+
+import CategoryBanners from './components/CategoryBanners';
 
 // Firebase Integrations
 import { 
@@ -63,6 +66,24 @@ export default function App() {
   const [liveProjects, setLiveProjects] = useState<Project[] | null>(null);
   const [liveGallery, setLiveGallery] = useState<GalleryItem[] | null>(null);
   const [liveStoreProducts, setLiveStoreProducts] = useState<StoreProduct[] | null>(null);
+
+  // Video Modal Custom States
+  const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const defaultCinematicVideo = '/GPA/Cinematic_D_animation_seaml.mp4';
+  const fallbackVideo = '/GPA/Prompt_Direto_e_Suave_Reco.mp4';
+  const [videoUrl, setVideoUrl] = useState(() => {
+    const cached = localStorage.getItem('gpa_video_url');
+    if (cached && cached.includes('mixkit.co')) {
+      localStorage.setItem('gpa_video_url', defaultCinematicVideo);
+      return defaultCinematicVideo;
+    }
+    if (cached && cached.trim()) {
+      return cached;
+    }
+    return defaultCinematicVideo;
+  });
+  const [isEditingVideoUrl, setIsEditingVideoUrl] = useState(false);
+  const [newVideoUrl, setNewVideoUrl] = useState('');
 
   const fetchFirebaseData = async () => {
     // 1. Instantly load local cached data for real-time offline-first feel and zero blank screens
@@ -168,24 +189,6 @@ export default function App() {
       unsubViews();
     };
   }, []);
-  
-  // Video Modal Custom States
-  const [isVideoOpen, setIsVideoOpen] = useState(false);
-  const defaultCinematicVideo = '/GPA/Cinematic_D_animation_seaml.mp4';
-  const fallbackVideo = '/GPA/Prompt_Direto_e_Suave_Reco.mp4';
-  const [videoUrl, setVideoUrl] = useState(() => {
-    const cached = localStorage.getItem('gpa_video_url');
-    if (cached && cached.includes('mixkit.co')) {
-      localStorage.setItem('gpa_video_url', defaultCinematicVideo);
-      return defaultCinematicVideo;
-    }
-    if (cached && cached.trim()) {
-      return cached;
-    }
-    return defaultCinematicVideo;
-  });
-  const [isEditingVideoUrl, setIsEditingVideoUrl] = useState(false);
-  const [newVideoUrl, setNewVideoUrl] = useState('');
 
   const getYouTubeId = (url: string) => {
     if (!url) return null;
@@ -218,55 +221,11 @@ export default function App() {
     }
   }, [activeToast]);
 
-  // Intersection Observer for scroll tracking
-  useEffect(() => {
-    const sections = ['home', 'production', 'about', 'store', 'services', 'portfolio', 'testimonials', 'contact'];
-    
-    const handleScroll = () => {
-      const scrollPosition = window.scrollY + 200;
-
-      for (const section of sections) {
-        const el = document.getElementById(section);
-        if (el) {
-          const top = el.offsetTop;
-          const height = el.offsetHeight;
-          if (scrollPosition >= top && scrollPosition < top + height) {
-            setActiveSection(section);
-            break;
-          }
-        }
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
   // Video progress bar interval simulation is no longer needed with real video player
 
   const handleScrollToSection = (id: string) => {
     setActiveSection(id);
     window.scrollTo({ top: 0, behavior: 'instant' });
-
-    const el = document.getElementById(id);
-    if (el) {
-      const offset = 120;
-      const bodyRect = document.body.getBoundingClientRect().top;
-      const elementRect = el.getBoundingClientRect().top;
-      const elementPosition = elementRect - bodyRect;
-      const offsetPosition = elementPosition - offset;
-
-      window.scrollTo({
-        top: Math.max(0, offsetPosition),
-        behavior: 'smooth'
-      });
-      return;
-    }
-
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
   };
 
   const handleOpenQuoteWithDetails = (serviceId?: string, productName?: string) => {
@@ -284,114 +243,386 @@ export default function App() {
 
   const renderPageContent = () => {
     switch (activeSection) {
+      case 'store':
+        return (
+          <div className="w-full py-12 sm:py-16 bg-white min-h-[70vh]">
+            <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center max-w-3xl mx-auto mb-10 space-y-3">
+                <span className="inline-block text-xs font-akrobat font-black tracking-widest text-[#0B63E5] uppercase bg-[#0B63E5]/10 px-3.5 py-1 rounded-md">
+                  Catálogo Oficial GPA
+                </span>
+                <h1 className="text-3xl sm:text-5xl font-akrobat font-black uppercase tracking-tight text-slate-900">
+                  Nossa Loja Online & Produtos
+                </h1>
+                <p className="text-sm sm:text-base text-slate-600 font-montserrat leading-relaxed">
+                  Explore o catálogo de produção industrial, consulte preços de referência e encomende diretamente por WhatsApp ou com simulação instantânea de orçamento.
+                </p>
+              </div>
+              <OnlineStore siteConfig={liveConfig} onOpenQuoteWithDetails={handleOpenQuoteWithDetails} storeProducts={liveStoreProducts} />
+            </div>
+          </div>
+        );
+
+      case 'services':
+        return (
+          <div className="w-full py-8 sm:py-12 bg-[#fafafa] min-h-[70vh]">
+            <ServicesExplorer 
+              onOpenQuoteCalculatorWithService={(serviceId) => handleOpenQuoteWithDetails(serviceId)} 
+            />
+          </div>
+        );
+
       case 'production':
-        return <Slideshow />;
+        return (
+          <div className="w-full py-8 sm:py-12 bg-slate-950 text-white min-h-[70vh]">
+            <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 mb-8 text-center">
+              <span className="inline-block text-xs font-akrobat font-black tracking-widest text-[#0B63E5] uppercase bg-[#0B63E5]/20 px-3.5 py-1 rounded-md mb-2">
+                Infraestrutura Industrial em Luanda
+              </span>
+              <h1 className="text-3xl sm:text-5xl font-akrobat font-black uppercase tracking-tight text-white">
+                Nosso Parque Industrial & Tecnologia
+              </h1>
+              <p className="text-sm sm:text-base text-slate-300 font-montserrat max-w-2xl mx-auto mt-2">
+                Conheça a maquinaria de ponta, processos de controlo de qualidade e capacidade de escala instalada em Luanda para atender todas as 21 províncias.
+              </p>
+            </div>
+            <Slideshow />
+            <StatsCounter 
+              provinciasAtendidas={liveConfig?.statsProvinciasAtendidas} 
+              anosExperiencia={liveConfig?.statsAnosExperiencia} 
+            />
+          </div>
+        );
+
       case 'about':
         return (
-          <section id="about" className="relative pt-44 sm:pt-52 md:pt-60 lg:pt-64 pb-24 scroll-mt-36 border-t border-white/10 overflow-hidden">
-            <div className="absolute inset-0 z-0">
-              <video className="h-full w-full object-cover opacity-25" autoPlay muted loop playsInline preload="none">
-                <source src="/GPA/Cinematic_D_animation_seaml.mp4" type="video/mp4" />
-              </video>
-              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(249,250,252,0.90),rgba(245,247,255,0.96))]" />
-            </div>
-            <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="w-full py-12 sm:py-20 bg-slate-50 min-h-[70vh]">
+            <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
                 <div className="lg:col-span-5 relative">
-                  <div className="absolute -top-10 -left-10 w-40 h-40 bg-brand-orange/5 rounded-full blur-2xl"></div>
-                  <div className="relative bg-white rounded-3xl p-6 sm:p-8 text-slate-800 space-y-6 shadow-xl overflow-hidden border border-slate-200">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(99,102,241,0.05)_0%,transparent_60%)] pointer-events-none"></div>
+                  <div className="relative bg-white rounded-2xl p-6 sm:p-8 text-slate-800 space-y-6 shadow-xl overflow-hidden border border-slate-200">
                     {liveConfig?.aboutImageUrl && (
-                      <div className="relative h-44 w-full rounded-2xl overflow-hidden border border-slate-100 shadow-sm">
+                      <div className="relative h-56 w-full rounded-xl overflow-hidden border border-slate-100 shadow-sm">
                         <img src={liveConfig.aboutImageUrl} alt="GPA Angola" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       </div>
                     )}
-                    <div className="relative z-10 space-y-4">
-                      <div className="p-3 bg-brand-orange/10 rounded-2xl inline-block text-brand-orange"><Award className="w-6 h-6" /></div>
-                      <h3 className="font-display font-extrabold text-xl sm:text-2xl leading-tight text-slate-900">{liveConfig?.aboutHighlightTitle || 'Liderança no Setor de Artes Gráficas em Luanda'}</h3>
-                      <p className="text-xs sm:text-sm text-slate-600 font-sans leading-relaxed">{liveConfig?.aboutHighlightText || 'Fundada com a missão de colmatar a escassez de produção industrial de alta definição, a GPA Angola tornou-se o parceiro estratégico de corporações multinacionais e gabinetes governamentais.'}</p>
+                    <div className="relative z-10 space-y-3">
+                      <div className="p-2.5 bg-[#0B63E5]/10 rounded-xl inline-block text-[#0B63E5]"><Award className="w-6 h-6" /></div>
+                      <h3 className="font-akrobat font-black text-xl sm:text-2xl uppercase tracking-tight text-slate-900">{liveConfig?.aboutHighlightTitle || 'Liderança no Setor de Artes Gráficas em Luanda'}</h3>
+                      <p className="text-xs sm:text-sm text-slate-600 font-montserrat leading-relaxed">{liveConfig?.aboutHighlightText || 'Fundada com a missão de colmatar a escassez de produção industrial de alta definição, a GPA Angola tornou-se o parceiro estratégico de corporações multinacionais e gabinetes governamentais.'}</p>
                     </div>
-                    <div className="border-t border-slate-100 pt-5 mt-2 space-y-3.5 relative z-10">
-                      <div className="flex items-center space-x-3 text-xs sm:text-sm font-sans"><div className="w-5 h-5 bg-emerald-500 text-white rounded-full flex items-center justify-center p-0.5"><Check className="w-3 h-3 stroke-[3]" /></div><span className="font-semibold text-slate-700">Parque de máquinas próprio 100% ativo</span></div>
-                      <div className="flex items-center space-x-3 text-xs sm:text-sm font-sans"><div className="w-5 h-5 bg-emerald-500 text-white rounded-full flex items-center justify-center p-0.5"><Check className="w-3 h-3 stroke-[3]" /></div><span className="font-semibold text-slate-700">Importação direta de consumíveis alemães</span></div>
-                      <div className="flex items-center space-x-3 text-xs sm:text-sm font-sans"><div className="w-5 h-5 bg-emerald-500 text-white rounded-full flex items-center justify-center p-0.5"><Check className="w-3 h-3 stroke-[3]" /></div><span className="font-semibold text-slate-700">Equipa técnica de montagem 24/7</span></div>
-                    </div>
-                    <div className="bg-slate-50 p-4 rounded-2xl flex items-center space-x-3 relative z-10 border border-slate-100">
-                      <span className="text-2xl font-black text-brand-orange font-display">{liveConfig?.statsAnosExperiencia !== undefined ? `${liveConfig.statsAnosExperiencia}+` : '18+'}</span>
-                      <p className="text-[11px] text-slate-600 font-sans leading-snug">Anos de experiência sólida moldando identidades visuais de peso em todas as {liveConfig?.statsProvinciasAtendidas !== undefined ? liveConfig.statsProvinciasAtendidas : '21'} províncias atendidas.</p>
+                    <div className="border-t border-slate-100 pt-4 space-y-2.5 relative z-10">
+                      <div className="flex items-center space-x-3 text-xs sm:text-sm font-montserrat"><div className="w-5 h-5 bg-emerald-500 text-white rounded-full flex items-center justify-center p-0.5"><Check className="w-3 h-3 stroke-[3]" /></div><span className="font-semibold text-slate-700">Parque de máquinas próprio 100% ativo</span></div>
+                      <div className="flex items-center space-x-3 text-xs sm:text-sm font-montserrat"><div className="w-5 h-5 bg-emerald-500 text-white rounded-full flex items-center justify-center p-0.5"><Check className="w-3 h-3 stroke-[3]" /></div><span className="font-semibold text-slate-700">Importação direta de consumíveis alemães</span></div>
+                      <div className="flex items-center space-x-3 text-xs sm:text-sm font-montserrat"><div className="w-5 h-5 bg-emerald-500 text-white rounded-full flex items-center justify-center p-0.5"><Check className="w-3 h-3 stroke-[3]" /></div><span className="font-semibold text-slate-700">Equipa técnica de montagem 24/7</span></div>
                     </div>
                   </div>
                 </div>
 
                 <div className="lg:col-span-7 space-y-6">
-                  <div className="inline-block text-xs font-mono font-bold tracking-widest text-brand-orange uppercase bg-brand-orange/10 px-3.5 py-1 rounded-full">{liveConfig?.aboutTitle || 'Quem Somos'}</div>
-                  <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight text-slate-900 leading-tight">{liveConfig?.aboutSubtitle || 'Criamos marcas prontas para deixar uma impressão indelével no mercado.'}</h2>
-                  <div className="space-y-4 text-sm sm:text-base text-slate-600 font-sans leading-relaxed">
+                  <span className="inline-block text-xs font-akrobat font-black tracking-widest text-[#0B63E5] uppercase bg-[#0B63E5]/10 px-3.5 py-1 rounded-md">{liveConfig?.aboutTitle || 'Quem Somos'}</span>
+                  <h1 className="text-3xl sm:text-5xl font-akrobat font-black uppercase tracking-tight text-slate-900 leading-tight">{liveConfig?.aboutSubtitle || 'Criamos marcas prontas para deixar uma impressão indelével no mercado.'}</h1>
+                  <div className="space-y-4 text-sm sm:text-base text-slate-600 font-montserrat leading-relaxed">
                     <p>{liveConfig?.aboutText1 || 'Na GPA Angola, compreendemos que o material gráfico e o fardamento de uma empresa são a extensão física da sua credibilidade. É por isso que não subcontratamos a nossa produção. Todo o processo — desde a concepção gráfica no nosso estúdio criativo, até à impressão offset, cozedura têxtil e instalação física de letreiros — é realizado internamente.'}</p>
                     <p>{liveConfig?.aboutText2 || 'Contamos com instalações modernas equipadas com tecnologia industrial de última geração, o que nos permite garantir prazos recordes e preços imbatíveis para tiragens de alta escala.'}</p>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
-                    <div className="p-4 bg-white border border-slate-200 shadow-sm rounded-2xl flex items-start space-x-3 backdrop-blur-xl"><div className="p-2 bg-brand-orange/10 text-brand-orange rounded-xl mt-0.5"><Sparkles className="w-4.5 h-4.5" /></div><div><h4 className="font-display font-bold text-sm text-slate-900">Inovação Tecnológica</h4><p className="text-xs text-slate-500 mt-1 font-sans">Investimento constante em sistemas automáticos de tintagem e corte a laser.</p></div></div>
-                    <div className="p-4 bg-white border border-slate-200 shadow-sm rounded-2xl flex items-start space-x-3 backdrop-blur-xl"><div className="p-2 bg-brand-orange/10 text-brand-orange rounded-xl mt-0.5"><MapPin className="w-4.5 h-4.5" /></div><div><h4 className="font-display font-bold text-sm text-slate-900">Logística Nacional</h4><p className="text-xs text-slate-500 mt-1 font-sans">Capacidade logística para entregar e instalar stands e fachadas em qualquer província.</p></div></div>
+                    <div className="p-4 bg-white border border-slate-200 shadow-sm rounded-xl flex items-start space-x-3"><div className="p-2 bg-[#0B63E5]/10 text-[#0B63E5] rounded-lg mt-0.5"><Sparkles className="w-5 h-5" /></div><div><h4 className="font-akrobat font-black uppercase text-base text-slate-900">Inovação Tecnológica</h4><p className="text-xs text-slate-500 mt-1 font-montserrat">Sistemas automáticos de tintagem e corte a laser computadorizado.</p></div></div>
+                    <div className="p-4 bg-white border border-slate-200 shadow-sm rounded-xl flex items-start space-x-3"><div className="p-2 bg-[#0B63E5]/10 text-[#0B63E5] rounded-lg mt-0.5"><MapPin className="w-5 h-5" /></div><div><h4 className="font-akrobat font-black uppercase text-base text-slate-900">Logística Nacional</h4><p className="text-xs text-slate-500 mt-1 font-montserrat">Capacidade para entregar e montar stands e fachadas em qualquer província.</p></div></div>
                   </div>
                 </div>
               </div>
             </div>
-          </section>
+          </div>
         );
-      case 'store':
-        return (
-          <section id="store" className="relative pt-44 sm:pt-52 md:pt-60 lg:pt-64 pb-24 scroll-mt-36 border-t border-white/10 overflow-hidden">
-            <div className="absolute inset-0 z-0">
-              <video className="h-full w-full object-cover opacity-20" autoPlay muted loop playsInline preload="none">
-                <source src="/GPA/Cinematic_D_animation_seaml.mp4" type="video/mp4" />
-              </video>
-              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.90),rgba(250,250,255,0.96))]" />
-            </div>
-            <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-              <div className="text-center max-w-3xl mx-auto mb-12 mt-4 sm:mt-8 space-y-4">
-                <div className="inline-block text-xs font-mono font-bold tracking-widest text-brand-orange uppercase bg-brand-orange/10 px-3.5 py-1 rounded-full">Catálogo Oficial</div>
-                <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight text-brand-purple">Nossa Loja Online</h2>
-                <p className="text-sm sm:text-base text-slate-600 font-sans leading-relaxed">Explore o nosso catálogo industrial, consulte os preços de referência em tempo real e faça as suas encomendas diretamente por WhatsApp ou com simulação automática de orçamento.</p>
-              </div>
-              <OnlineStore siteConfig={liveConfig} onOpenQuoteWithDetails={handleOpenQuoteWithDetails} storeProducts={liveStoreProducts} />
-            </div>
-          </section>
-        );
-      case 'services':
-        return <ServicesExplorer onOpenQuoteCalculatorWithService={(serviceId) => handleOpenQuoteWithDetails(serviceId)} />;
+
       case 'portfolio':
-        return <Portfolio onOpenQuoteForProject={(serviceId, productName) => handleOpenQuoteWithDetails(serviceId, productName)} liveProjects={liveProjects} />;
+        return (
+          <div className="w-full py-12 sm:py-16 bg-white min-h-[70vh]">
+            <Portfolio 
+              onOpenQuoteForProject={(serviceId, productName) => handleOpenQuoteWithDetails(serviceId, productName)} 
+              liveProjects={liveProjects} 
+            />
+          </div>
+        );
+
+      case 'partner':
+        return (
+          <div className="w-full py-12 sm:py-20 bg-slate-900 text-white min-h-[70vh]">
+            <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="max-w-3xl mx-auto text-center space-y-4 mb-12">
+                <span className="inline-block text-xs font-akrobat font-black tracking-widest text-[#0B63E5] uppercase bg-[#0B63E5]/20 px-3.5 py-1 rounded-md">
+                  Programa B2B & Agências
+                </span>
+                <h1 className="text-3xl sm:text-5xl font-akrobat font-black uppercase tracking-tight text-white">
+                  Seja um Parceiro Oficial GPA Angola
+                </h1>
+                <p className="text-slate-300 font-montserrat text-sm sm:text-base leading-relaxed">
+                  Se é uma agência de publicidade, designer freelancer, revendedor gráfico ou gabinete empresarial, torne-se parceiro da GPA Angola e usufrua de descontos exclusivos de revenda, produção prioritária e apoio técnico dedicado.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                <div className="p-6 rounded-2xl bg-slate-950/80 border border-white/10 text-center space-y-3">
+                  <div className="w-12 h-12 mx-auto rounded-xl bg-[#0B63E5]/20 text-[#0B63E5] flex items-center justify-center font-akrobat font-black text-2xl">%</div>
+                  <h3 className="font-akrobat font-black text-xl uppercase text-white">Tabela de Revenda VIP</h3>
+                  <p className="text-xs text-slate-400 font-montserrat">Margens comerciais vantajosas e preços de fábrica em grandes e médias tiragens.</p>
+                </div>
+                <div className="p-6 rounded-2xl bg-slate-950/80 border border-white/10 text-center space-y-3">
+                  <div className="w-12 h-12 mx-auto rounded-xl bg-[#0B63E5]/20 text-[#0B63E5] flex items-center justify-center font-akrobat font-black text-2xl">⚡</div>
+                  <h3 className="font-akrobat font-black text-xl uppercase text-white">Fila de Produção Express</h3>
+                  <p className="text-xs text-slate-400 font-montserrat">Prioridade na linha de corte, impressão offset e bordados computadorizados.</p>
+                </div>
+                <div className="p-6 rounded-2xl bg-slate-950/80 border border-white/10 text-center space-y-3">
+                  <div className="w-12 h-12 mx-auto rounded-xl bg-[#0B63E5]/20 text-[#0B63E5] flex items-center justify-center font-akrobat font-black text-2xl">🤝</div>
+                  <h3 className="font-akrobat font-black text-xl uppercase text-white">Gestor de Conta Dedicado</h3>
+                  <p className="text-xs text-slate-400 font-montserrat">Acompanhamento direto por WhatsApp para aprovação imediata de provas de cor.</p>
+                </div>
+              </div>
+
+              <div className="text-center">
+                <a 
+                  href={`https://wa.me/244923000000?text=Ol%C3%A1%20GPA%20Angola%2C%20gostaria%20de%20me%20registar%20como%20Parceiro%20B2B%20%2F%20Revendedor.`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-default inline-flex"
+                >
+                  <span>Candidatar a Parceiro no WhatsApp</span>
+                  <ArrowRight className="w-5 h-5 ml-1" />
+                </a>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'calculator':
+        return (
+          <div className="w-full py-12 sm:py-16 bg-slate-900 text-white min-h-[70vh]">
+            <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="max-w-3xl mx-auto text-center space-y-3 mb-10">
+                <span className="inline-block text-xs font-akrobat font-black tracking-widest text-[#0B63E5] uppercase bg-[#0B63E5]/20 px-3.5 py-1 rounded-md">
+                  Simulador de Orçamentos Online
+                </span>
+                <h1 className="text-3xl sm:text-5xl font-akrobat font-black uppercase tracking-tight text-white">
+                  Calculadora Instantânea GPA Angola
+                </h1>
+                <p className="text-slate-300 font-montserrat text-sm sm:text-base">
+                  Selecione o serviço pretendido, configure as quantidades e dimensões para obter uma estimativa de investimento imediata.
+                </p>
+              </div>
+
+              <div className="max-w-2xl mx-auto text-center">
+                <button
+                  onClick={() => setIsQuoteOpen(true)}
+                  className="btn-default text-xl py-4 px-8"
+                >
+                  <Calculator className="w-6 h-6 mr-2" />
+                  <span>ABRIR CALCULADORA DE ORÇAMENTO</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+
       case 'contact':
         return (
-          <section id="contact" className="relative flex-1 flex flex-col justify-center py-20 pt-36 sm:pt-44 lg:pt-48 scroll-mt-28 overflow-hidden">
-            <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 w-full my-auto">
-              <div className="rounded-[2rem] border border-white/20 bg-[linear-gradient(135deg,rgba(17,24,39,0.96),rgba(30,41,59,0.9),rgba(15,23,42,0.96))] p-8 sm:p-12 text-white shadow-2xl">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
-                  <div className="space-y-4 max-w-2xl">
-                    <div className="inline-block text-xs font-mono font-bold tracking-widest text-brand-orange uppercase bg-brand-orange/10 px-3.5 py-1 rounded-full">Contacto Directo</div>
-                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-extrabold tracking-tight leading-tight">Vamos criar a sua próxima campanha ou solução de produção.</h2>
-                    <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-                      Entre em contacto com a nossa equipa comercial para pedir orçamentos, esclarecer dúvidas técnicas ou agendar uma reunião presencial.
+          <div className="w-full py-12 sm:py-20 bg-slate-950 text-white min-h-[70vh]">
+            <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 w-full space-y-12">
+              
+              {/* Header Section */}
+              <div className="text-center max-w-3xl mx-auto space-y-3">
+                <span className="inline-block text-xs font-akrobat font-black tracking-widest text-[#0B63E5] uppercase bg-[#0B63E5]/20 px-3.5 py-1 rounded-md">
+                  Canais de Atendimento
+                </span>
+                <h1 className="text-3xl sm:text-5xl font-akrobat font-black uppercase tracking-tight text-white">
+                  Fale Diretamente com a GPA Angola
+                </h1>
+                <p className="text-slate-300 text-sm sm:text-base font-montserrat leading-relaxed">
+                  Estamos prontos para atender as suas necessidades industriais em Luanda e enviar para todas as 21 províncias de Angola.
+                </p>
+              </div>
+
+              {/* Grid: Contact Info & Interactive Cards */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                {/* Left: Info Cards & Phone Lines */}
+                <div className="lg:col-span-6 space-y-6">
+                  
+                  {/* Phone Lines Card */}
+                  <div className="rounded-2xl border border-white/10 bg-slate-900/90 p-6 sm:p-8 shadow-xl space-y-4">
+                    <h3 className="font-akrobat font-black uppercase text-xl text-white flex items-center gap-2">
+                      <Phone className="w-5 h-5 text-[#0B63E5]" />
+                      Linhas Telefónicas & WhatsApp Comercial
+                    </h3>
+                    <p className="text-xs text-slate-400 font-montserrat">
+                      Clique em qualquer número para ligar ou abrir diretamente uma conversa de WhatsApp:
                     </p>
+                    <div className="flex flex-col gap-3">
+                      {(liveConfig?.companyPhones && liveConfig.companyPhones.length > 0 ? liveConfig.companyPhones : ['+244 945 119 409', '+244 933 417 569', '+244 953 979 343']).map((phone) => {
+                        const clean = phone.replace(/\D/g, '');
+                        return (
+                          <a 
+                            key={phone} 
+                            href={`https://wa.me/${clean}?text=Ol%C3%A1%20GPA%20Angola%2C%20gostaria%20de%20solicitar%20um%20or%C3%A7amento.`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-between px-5 py-3.5 rounded-xl bg-white/5 hover:bg-[#0B63E5] border border-white/10 hover:border-[#0B63E5] text-base font-bold font-akrobat uppercase transition-all shadow-md group cursor-pointer"
+                          >
+                            <span className="flex items-center gap-3">
+                              <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+                              {phone}
+                            </span>
+                            <span className="text-xs font-montserrat font-medium text-slate-300 group-hover:text-white flex items-center gap-1">
+                              WhatsApp / Chamar <ArrowRight className="w-4 h-4" />
+                            </span>
+                          </a>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-3">
-                    {(liveConfig?.companyPhones && liveConfig.companyPhones.length > 0 ? liveConfig.companyPhones : ['+244 945 119 409', '+244 933 417 569', '+244 953 979 343']).map((phone) => (
-                      <a key={phone} href={`tel:${phone.replace(/\s+/g, '')}`} className="px-5 py-3 rounded-full bg-white/10 border border-white/15 hover:bg-brand-orange hover:border-brand-orange text-sm sm:text-base font-semibold transition-all shadow-md">{phone}</a>
-                    ))}
+
+                  {/* Location & Hours Card */}
+                  <div className="rounded-2xl border border-white/10 bg-slate-900/90 p-6 sm:p-8 shadow-xl space-y-4">
+                    <h3 className="font-akrobat font-black uppercase text-xl text-white flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-[#0B63E5]" />
+                      Localização & Horário da Fábrica
+                    </h3>
+                    <div className="space-y-3 font-montserrat text-sm text-slate-300">
+                      <p className="flex items-start gap-3">
+                        <span className="font-semibold text-white min-w-[90px]">Endereço:</span>
+                        <span>Luanda, Angola (Parque Industrial e Centro de Produção Gráfica/Têxtil)</span>
+                      </p>
+                      <p className="flex items-start gap-3">
+                        <span className="font-semibold text-white min-w-[90px]">E-mail:</span>
+                        <a href="mailto:contacto@gpaangola.com" className="text-[#0B63E5] hover:underline">contacto@gpaangola.com</a>
+                      </p>
+                      <p className="flex items-start gap-3">
+                        <span className="font-semibold text-white min-w-[90px]">Horário:</span>
+                        <span>Segunda a Sexta: 08:00 – 18:00 | Sábado: 08:00 – 13:00</span>
+                      </p>
+                      <p className="flex items-start gap-3">
+                        <span className="font-semibold text-white min-w-[90px]">Cobertura:</span>
+                        <span className="text-emerald-400 font-semibold">Envio e montagem em todas as 21 províncias</span>
+                      </p>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Right: Fast Message Form */}
+                <div className="lg:col-span-6">
+                  <div className="rounded-2xl border border-white/10 bg-slate-900/90 p-6 sm:p-8 shadow-xl space-y-5">
+                    <h3 className="font-akrobat font-black uppercase text-2xl text-white flex items-center gap-2">
+                      <Mail className="w-6 h-6 text-[#0B63E5]" />
+                      Envie uma Mensagem Imediata
+                    </h3>
+                    <p className="text-xs text-slate-400 font-montserrat">
+                      Preencha os seus dados e a equipa de atendimento responderá em menos de 15 minutos:
+                    </p>
+
+                    <form 
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const form = e.target as HTMLFormElement;
+                        const name = (form.elements.namedItem('name') as HTMLInputElement).value;
+                        const phone = (form.elements.namedItem('phone') as HTMLInputElement).value;
+                        const msg = (form.elements.namedItem('message') as HTMLTextAreaElement).value;
+                        const clean = (liveConfig?.companyPhones?.[0] || '+244923000000').replace(/\D/g, '');
+                        const text = `*Novo Contacto do Website GPA*\n\n*Nome:* ${name}\n*Telefone:* ${phone}\n*Mensagem:* ${msg}`;
+                        window.open(`https://wa.me/${clean}?text=${encodeURIComponent(text)}`, '_blank');
+                      }}
+                      className="space-y-4"
+                    >
+                      <div>
+                        <label className="block text-xs uppercase font-akrobat font-bold tracking-wider text-slate-300 mb-1">Seu Nome / Empresa</label>
+                        <input 
+                          type="text" 
+                          name="name" 
+                          required 
+                          placeholder="Ex: Manuel Silva ou Empresa Lda."
+                          className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/15 text-white placeholder:text-slate-500 font-montserrat text-sm focus:outline-none focus:border-[#0B63E5]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs uppercase font-akrobat font-bold tracking-wider text-slate-300 mb-1">Telefone / WhatsApp</label>
+                        <input 
+                          type="tel" 
+                          name="phone" 
+                          required 
+                          placeholder="+244 9XX XXX XXX"
+                          className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/15 text-white placeholder:text-slate-500 font-montserrat text-sm focus:outline-none focus:border-[#0B63E5]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs uppercase font-akrobat font-bold tracking-wider text-slate-300 mb-1">Mensagem ou Descrição do Pedido</label>
+                        <textarea 
+                          name="message" 
+                          rows={4} 
+                          required 
+                          placeholder="Descreva o que necessita (quantidades, tipos de materiais ou serviços)..."
+                          className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/15 text-white placeholder:text-slate-500 font-montserrat text-sm focus:outline-none focus:border-[#0B63E5]"
+                        ></textarea>
+                      </div>
+
+                      <button 
+                        type="submit" 
+                        className="w-full btn-default text-lg py-3.5 flex items-center justify-center gap-2"
+                      >
+                        <Send className="w-5 h-5" />
+                        <span>ENVIAR MENSAGEM VIA WHATSAPP</span>
+                      </button>
+                    </form>
                   </div>
                 </div>
+
               </div>
+
             </div>
-          </section>
+          </div>
         );
+
       case 'home':
       default:
         return (
           <>
-            <Hero onOpenQuoteCalculator={() => handleOpenQuoteWithDetails()} onExploreServices={() => handleScrollToSection('services')} onPlayVideo={() => setIsVideoOpen(true)} onOpenIndustrialGallery={() => setIsIndustrialGalleryOpen(true)} title={liveConfig?.heroTitle} subtitle={liveConfig?.heroSubtitle} videoUrl={videoUrl} />
-            <Slideshow />
-            <StatsCounter provinciasAtendidas={liveConfig?.statsProvinciasAtendidas} anosExperiencia={liveConfig?.statsAnosExperiencia} />
+            {/* 1. HERO BANNER SLIDER & MIRROR BOX */}
+            <div id="home">
+              <Hero 
+                onOpenQuoteCalculator={() => handleOpenQuoteWithDetails()} 
+                onExploreServices={() => handleScrollToSection('services')} 
+                onPlayVideo={() => setIsVideoOpen(true)} 
+                onOpenIndustrialGallery={() => setIsIndustrialGalleryOpen(true)} 
+                title={liveConfig?.heroTitle} 
+                subtitle={liveConfig?.heroSubtitle} 
+              />
+            </div>
+
+            {/* 2. CATEGORY BANNERS (2 CARDS: PARQUE INDUSTRIAL + VÍDEO INSTITUCIONAL) */}
+            <CategoryBanners 
+              onSelectCategory={(catId) => handleScrollToSection(catId || 'production')}
+              onOpenQuoteWithService={(svcId) => handleOpenQuoteWithDetails(svcId)}
+              onPlayVideo={() => setIsVideoOpen(true)}
+            />
+
+            {/* 3. SERVIÇOS EM DESTAQUE */}
+            <div id="services">
+              <ServicesExplorer 
+                onOpenQuoteCalculatorWithService={(serviceId) => handleOpenQuoteWithDetails(serviceId)} 
+              />
+            </div>
+
+            {/* 4. PARQUE INDUSTRIAL & SLIDESHOW */}
+            <div id="production">
+              <Slideshow />
+            </div>
+
+            {/* 5. ESTATÍSTICAS NACIONAIS (21 PROVÍNCIAS) */}
+            <StatsCounter 
+              provinciasAtendidas={liveConfig?.statsProvinciasAtendidas} 
+              anosExperiencia={liveConfig?.statsAnosExperiencia} 
+            />
           </>
         );
     }
@@ -412,29 +643,8 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-hexagon-pattern text-slate-800 selection:bg-brand-orange selection:text-white font-sans antialiased overflow-x-hidden relative">
-      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none bg-cover bg-center" style={{ backgroundImage: `url('/GPA/hero_poster.jpg'), url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1964&auto=format&fit=crop')` }}>
-        <video key={videoUrl} className="page-video opacity-80" autoPlay muted loop playsInline poster="/GPA/hero_poster.jpg" preload="metadata">
-          <source src={videoUrl} type="video/mp4" />
-        </video>
-        <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(9,10,16,0.72),rgba(18,22,35,0.54),rgba(17,13,34,0.82))]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(245,158,11,0.18),transparent_18%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.16),transparent_24%)]" />
-      </div>
-
-      <div 
-        className="fixed inset-0 pointer-events-none z-0 bg-no-repeat bg-center" 
-        style={{ 
-          backgroundImage: `url(${liveConfig?.bgImageUrl || liveConfig?.logoUrl || "https://i.ibb.co/v6FWV57q/LOGO-GPA.png"})`, 
-          backgroundSize: 'min(450px, 75%)', 
-          backgroundPosition: 'center 35%', 
-          opacity: liveConfig?.bgOpacity && liveConfig.bgOpacity > 0.01 ? liveConfig.bgOpacity : 0.15 
-        }}
-      />
-
+    <div className="min-h-screen bg-white text-slate-800 font-sans antialiased overflow-x-hidden relative">
       <div className="relative z-10 flex flex-col min-h-screen">
-        <div className="absolute top-[-100px] left-[-100px] w-96 h-96 bg-indigo-600/5 rounded-full blur-[120px] pointer-events-none"></div>
-        <div className="absolute bottom-[20%] right-[-50px] w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[150px] pointer-events-none"></div>
-
         <Header onOpenQuoteCalculator={() => handleOpenQuoteWithDetails()} onScrollToSection={handleScrollToSection} activeSection={activeSection} logoUrl={liveConfig?.logoUrl} companyPhones={liveConfig?.companyPhones} />
 
         <main className="flex-1 flex flex-col w-full">

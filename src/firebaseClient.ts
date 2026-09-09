@@ -37,6 +37,18 @@ const STORE_CATEGORIES_COLLECTION = 'gpa_store_categories';
 const SERVICES_COLLECTION = 'gpa_services';
 
 /**
+ * --- SAFE LOCAL STORAGE HELPER ---
+ * Prevents QuotaExceededError when storing images/large objects in localStorage.
+ */
+export function safeSetItem(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch (e) {
+    console.warn(`[Storage] Local storage write skipped for key "${key}" (quota exceeded or restricted).`);
+  }
+}
+
+/**
  * --- RETRIEVAL TIMEOUT HELPER ---
  * Guarantees that if Firestore stalls/hangs due to network, unprovisioned DB,
  * or unaccepted terms, the app immediately falls back to static defaults and never spins forever.
@@ -93,6 +105,10 @@ export interface SiteConfig {
   companyAddress: string;
   videoUrl: string;
   whatsappNumber: string;
+  companyInstagram?: string;
+  companyFacebook?: string;
+  companyLinkedin?: string;
+  companyYoutube?: string;
 
   // New Fields requested by user to alter everything (text, images, video)
   aboutTitle: string;
@@ -156,7 +172,7 @@ export interface SiteConfig {
 
 const DEFAULT_CONFIG: SiteConfig = {
   imgbbApiKey: '4714d428c9a98b9354b9fec028184ea9',
-  heroTitle: 'Produção Industrial Gráfica e Têxtil em Luanda',
+  heroTitle: 'EXCELÊNCIA EM ARTES GRÁFICAS, TÊXTIL & BRANDING',
   heroSubtitle: 'A GPA Angola é a maior aliada da sua marca na produção de fardamentos, sinalética e brindes de alta qualidade corporativa.',
   companyEmail: 'comercial@gpaangola.com',
   companyPhone: '+244 994 943 828',
@@ -169,6 +185,10 @@ const DEFAULT_CONFIG: SiteConfig = {
   companyAddress: 'Parque Industrial de Viana, Luanda, Angola',
   videoUrl: 'https://youtu.be/NhOghnXD1f8?si=Y0Jd-XJlk7APXYO9',
   whatsappNumber: '244923100200',
+  companyInstagram: 'https://www.instagram.com/gpa_angola/',
+  companyFacebook: 'https://www.facebook.com/facegpaangola',
+  companyLinkedin: 'https://ao.linkedin.com/company/gpa-angola',
+  companyYoutube: 'https://www.youtube.com/@GPA-ANGOLA',
 
   aboutTitle: 'Quem Somos',
   aboutSubtitle: 'Criamos marcas prontas para deixar uma impressão indelével no mercado.',
@@ -319,11 +339,11 @@ export async function getSiteConfig(): Promise<SiteConfig> {
           productPrices: mergedPrices, 
           productMinQtys: mergedMinQtys 
         } as SiteConfig;
-        try { localStorage.setItem('gpa_cached_site_config', JSON.stringify(data)); } catch (e) {}
+        try { safeSetItem('gpa_cached_site_config', JSON.stringify(data)); } catch (e) {}
         return data;
       } else {
         try { await setDoc(configRef, DEFAULT_CONFIG); } catch (e) {}
-        try { localStorage.setItem('gpa_cached_site_config', JSON.stringify(DEFAULT_CONFIG)); } catch (e) {}
+        try { safeSetItem('gpa_cached_site_config', JSON.stringify(DEFAULT_CONFIG)); } catch (e) {}
         return DEFAULT_CONFIG;
       }
     } catch (err) {
@@ -338,7 +358,11 @@ export async function getSiteConfig(): Promise<SiteConfig> {
 export async function updateSiteConfig(newConfig: Partial<SiteConfig>): Promise<void> {
   const configRef = doc(db, CONFIG_COLLECTION, 'general_settings');
   try {
-    await setDoc(configRef, newConfig, { merge: true });
+    const configToSave: any = { ...newConfig };
+    if (configToSave.adminUsers === undefined) {
+      delete configToSave.adminUsers;
+    }
+    await setDoc(configRef, configToSave, { merge: true });
   } catch (err) {
     console.warn('Firestore updateSiteConfig error:', err);
   }
@@ -347,7 +371,7 @@ export async function updateSiteConfig(newConfig: Partial<SiteConfig>): Promise<
     const cached = localStorage.getItem('gpa_cached_site_config');
     const current = cached ? JSON.parse(cached) : DEFAULT_CONFIG;
     const updated = { ...current, ...newConfig };
-    localStorage.setItem('gpa_cached_site_config', JSON.stringify(updated));
+    safeSetItem('gpa_cached_site_config', JSON.stringify(updated));
   } catch (e) {
     console.warn('Could not update cached site config:', e);
   }
@@ -386,7 +410,7 @@ export async function getPartners(): Promise<Partner[]> {
             await setDoc(doc(db, PARTNERS_COLLECTION, p.id), p);
           }
         } catch (e) {}
-        try { localStorage.setItem('gpa_cached_partners', JSON.stringify(defaultPartners)); } catch (e) {}
+        try { safeSetItem('gpa_cached_partners', JSON.stringify(defaultPartners)); } catch (e) {}
         return defaultPartners;
       }
       const list: Partner[] = [];
@@ -395,7 +419,7 @@ export async function getPartners(): Promise<Partner[]> {
         list.push({ id: d.id, ...data } as Partner);
       });
       const sorted = list.sort((a, b) => (a.order || 0) - (b.order || 0));
-      try { localStorage.setItem('gpa_cached_partners', JSON.stringify(sorted)); } catch (e) {}
+      try { safeSetItem('gpa_cached_partners', JSON.stringify(sorted)); } catch (e) {}
       return sorted;
     } catch (err) {
       console.warn('Firestore getPartners error:', err);
@@ -421,7 +445,7 @@ export async function savePartner(partner: Partner): Promise<void> {
       list.push(partner);
     }
     list.sort((a, b) => (a.order || 0) - (b.order || 0));
-    localStorage.setItem('gpa_cached_partners', JSON.stringify(list));
+    safeSetItem('gpa_cached_partners', JSON.stringify(list));
   } catch (e) {}
 }
 
@@ -435,7 +459,7 @@ export async function deletePartner(id: string): Promise<void> {
     if (cached) {
       let list: Partner[] = JSON.parse(cached);
       list = list.filter(p => p.id !== id);
-      localStorage.setItem('gpa_cached_partners', JSON.stringify(list));
+      safeSetItem('gpa_cached_partners', JSON.stringify(list));
     }
   } catch (e) {}
 }
@@ -472,7 +496,7 @@ export async function getGalleryItems(): Promise<GalleryItem[]> {
             await setDoc(doc(db, GALLERY_COLLECTION, item.id), item);
           }
         } catch (e) {}
-        try { localStorage.setItem('gpa_cached_gallery', JSON.stringify(defaultGallery)); } catch (e) {}
+        try { safeSetItem('gpa_cached_gallery', JSON.stringify(defaultGallery)); } catch (e) {}
         return defaultGallery;
       }
       const list: GalleryItem[] = [];
@@ -481,7 +505,7 @@ export async function getGalleryItems(): Promise<GalleryItem[]> {
         list.push({ id: d.id, ...data } as GalleryItem);
       });
       const sorted = list.sort((a, b) => (a.order || 0) - (b.order || 0));
-      try { localStorage.setItem('gpa_cached_gallery', JSON.stringify(sorted)); } catch (e) {}
+      try { safeSetItem('gpa_cached_gallery', JSON.stringify(sorted)); } catch (e) {}
       return sorted;
     } catch (err) {
       console.warn('Firestore getGalleryItems error:', err);
@@ -507,7 +531,7 @@ export async function saveGalleryItem(item: GalleryItem): Promise<void> {
       list.push(item);
     }
     list.sort((a, b) => (a.order || 0) - (b.order || 0));
-    localStorage.setItem('gpa_cached_gallery', JSON.stringify(list));
+    safeSetItem('gpa_cached_gallery', JSON.stringify(list));
   } catch (e) {}
 }
 
@@ -521,7 +545,7 @@ export async function deleteGalleryItem(id: string): Promise<void> {
     if (cached) {
       let list: GalleryItem[] = JSON.parse(cached);
       list = list.filter(g => g.id !== id);
-      localStorage.setItem('gpa_cached_gallery', JSON.stringify(list));
+      safeSetItem('gpa_cached_gallery', JSON.stringify(list));
     }
   } catch (e) {}
 }
@@ -646,7 +670,7 @@ export async function getFirebaseProjects(): Promise<Project[]> {
             await setDoc(doc(db, PROJECTS_COLLECTION, p.id), p);
           }
         } catch (e) {}
-        try { localStorage.setItem('gpa_cached_projects', JSON.stringify(PROJECTS)); } catch (e) {}
+        try { safeSetItem('gpa_cached_projects', JSON.stringify(PROJECTS)); } catch (e) {}
         return PROJECTS;
       }
       const list: Project[] = [];
@@ -654,7 +678,7 @@ export async function getFirebaseProjects(): Promise<Project[]> {
         const data = d.data();
         list.push({ id: d.id, ...data } as Project);
       });
-      try { localStorage.setItem('gpa_cached_projects', JSON.stringify(list)); } catch (e) {}
+      try { safeSetItem('gpa_cached_projects', JSON.stringify(list)); } catch (e) {}
       return list;
     } catch (err) {
       console.warn('Firestore getFirebaseProjects error:', err);
@@ -677,7 +701,7 @@ export async function saveFirebaseProject(proj: Project): Promise<void> {
     } else {
       list.push(proj);
     }
-    localStorage.setItem('gpa_cached_projects', JSON.stringify(list));
+    safeSetItem('gpa_cached_projects', JSON.stringify(list));
   } catch (e) {
     console.warn('Could not update cached projects:', e);
   }
@@ -691,7 +715,7 @@ export async function deleteFirebaseProject(id: string): Promise<void> {
     if (cached) {
       let list: Project[] = JSON.parse(cached);
       list = list.filter(p => p.id !== id);
-      localStorage.setItem('gpa_cached_projects', JSON.stringify(list));
+      safeSetItem('gpa_cached_projects', JSON.stringify(list));
     }
   } catch (e) {
     console.warn('Could not update cached projects:', e);
@@ -707,11 +731,11 @@ export function subscribeSiteConfig(callback: (config: SiteConfig) => void): () 
   return onSnapshot(configRef, (snap) => {
     if (snap.exists()) {
       const data = { ...DEFAULT_CONFIG, ...snap.data() } as SiteConfig;
-      localStorage.setItem('gpa_cached_site_config', JSON.stringify(data));
+      safeSetItem('gpa_cached_site_config', JSON.stringify(data));
       callback(data);
     } else {
       setDoc(configRef, DEFAULT_CONFIG);
-      localStorage.setItem('gpa_cached_site_config', JSON.stringify(DEFAULT_CONFIG));
+      safeSetItem('gpa_cached_site_config', JSON.stringify(DEFAULT_CONFIG));
       callback(DEFAULT_CONFIG);
     }
   }, (err) => {
@@ -727,7 +751,7 @@ export function subscribePartners(callback: (partners: Partner[]) => void): () =
       list.push({ id: d.id, ...d.data() } as Partner);
     });
     const sorted = list.sort((a, b) => (a.order || 0) - (b.order || 0));
-    localStorage.setItem('gpa_cached_partners', JSON.stringify(sorted));
+    safeSetItem('gpa_cached_partners', JSON.stringify(sorted));
     callback(sorted);
   }, (err) => {
     console.error('Real-time partners sync error:', err);
@@ -741,7 +765,7 @@ export function subscribeProjects(callback: (projects: Project[]) => void): () =
     snap.forEach((d) => {
       list.push({ id: d.id, ...d.data() } as Project);
     });
-    localStorage.setItem('gpa_cached_projects', JSON.stringify(list));
+    safeSetItem('gpa_cached_projects', JSON.stringify(list));
     callback(list);
   }, (err) => {
     console.error('Real-time projects sync error:', err);
@@ -756,7 +780,7 @@ export function subscribeGallery(callback: (gallery: GalleryItem[]) => void): ()
       list.push({ id: d.id, ...d.data() } as GalleryItem);
     });
     const sorted = list.sort((a, b) => (a.order || 0) - (b.order || 0));
-    localStorage.setItem('gpa_cached_gallery', JSON.stringify(sorted));
+    safeSetItem('gpa_cached_gallery', JSON.stringify(sorted));
     callback(sorted);
   }, (err) => {
     console.error('Real-time gallery sync error:', err);
@@ -870,66 +894,81 @@ export const DEFAULT_ADMIN_USERS: AdminUser[] = [
 // Get all admin users from Firestore or LocalStorage
 export async function getAdminUsers(): Promise<AdminUser[]> {
   const cached = localStorage.getItem('gpa_cached_admin_users');
-  const fallback = cached ? JSON.parse(cached) : DEFAULT_ADMIN_USERS;
+  let localList: AdminUser[] = [];
+  if (cached) {
+    try {
+      localList = JSON.parse(cached);
+    } catch (e) {}
+  }
+
+  const mergedMap = new Map<string, AdminUser>();
+  DEFAULT_ADMIN_USERS.forEach(u => {
+    const key = (u.username || u.id || '').toLowerCase().trim().replace(/^@/, '');
+    if (key) mergedMap.set(key, u);
+  });
+  localList.forEach(u => {
+    if (u) {
+      const key = (u.username || u.id || '').toLowerCase().trim().replace(/^@/, '');
+      if (key) mergedMap.set(key, u);
+    }
+  });
 
   const fetchPromise = (async () => {
-    let list: AdminUser[] = [];
+    // 1. Primary Source: read all documents from dedicated ADMIN_USERS_COLLECTION
+    try {
+      const snap = await getDocs(collection(db, ADMIN_USERS_COLLECTION));
+      snap.forEach((d) => {
+        const item = { id: d.id, ...d.data() } as AdminUser;
+        if (item) {
+          const key = (item.username || item.id || '').toLowerCase().trim().replace(/^@/, '');
+          if (key) mergedMap.set(key, item);
+        }
+      });
+    } catch (e) {
+      console.warn('Could not read from ADMIN_USERS_COLLECTION:', e);
+    }
 
-    // 1. Primary Source: read adminUsers array from general_settings (always synchronized with site config)
+    // 2. Secondary Source: read from admin_users_registry
+    try {
+      const regRef = doc(db, CONFIG_COLLECTION, 'admin_users_registry');
+      const snapReg = await getDoc(regRef);
+      if (snapReg.exists() && Array.isArray(snapReg.data()?.users)) {
+        const regList = snapReg.data()?.users as AdminUser[];
+        regList.forEach(u => {
+          if (u) {
+            const key = (u.username || u.id || '').toLowerCase().trim().replace(/^@/, '');
+            if (key) mergedMap.set(key, u);
+          }
+        });
+      }
+    } catch (e) {}
+
+    // 3. Tertiary Source: read adminUsers array from general_settings
     try {
       const configRef = doc(db, CONFIG_COLLECTION, 'general_settings');
       const snapConfig = await getDoc(configRef);
-      if (snapConfig.exists() && Array.isArray(snapConfig.data()?.adminUsers) && snapConfig.data()?.adminUsers.length > 0) {
-        list = snapConfig.data()?.adminUsers as AdminUser[];
+      if (snapConfig.exists() && Array.isArray(snapConfig.data()?.adminUsers)) {
+        const firestoreList = snapConfig.data()?.adminUsers as AdminUser[];
+        firestoreList.forEach(u => {
+          if (u) {
+            const key = (u.username || u.id || '').toLowerCase().trim().replace(/^@/, '');
+            if (key) mergedMap.set(key, u);
+          }
+        });
       }
     } catch (e) {
       console.warn('Could not read adminUsers from general_settings:', e);
     }
 
-    // 2. Secondary Source: read from admin_users_registry
-    if (list.length === 0) {
-      try {
-        const regRef = doc(db, CONFIG_COLLECTION, 'admin_users_registry');
-        const snapReg = await getDoc(regRef);
-        if (snapReg.exists() && Array.isArray(snapReg.data()?.users) && snapReg.data()?.users.length > 0) {
-          list = snapReg.data()?.users as AdminUser[];
-        }
-      } catch (e) {}
-    }
-
-    // 3. Tertiary Source: read individual documents from ADMIN_USERS_COLLECTION
+    const finalList = Array.from(mergedMap.values());
     try {
-      const snap = await getDocs(collection(db, ADMIN_USERS_COLLECTION));
-      snap.forEach((d) => {
-        const item = { id: d.id, ...d.data() } as AdminUser;
-        if (!list.some(u => u.username?.toLowerCase().trim().replace(/^@/, '') === item.username?.toLowerCase().trim().replace(/^@/, ''))) {
-          list.push(item);
-        }
-      });
+      safeSetItem('gpa_cached_admin_users', JSON.stringify(finalList));
     } catch (e) {}
-
-    // Ensure defaults exist if list is empty or missing admin / gestor
-    if (list.length === 0) {
-      list = [...DEFAULT_ADMIN_USERS];
-    } else {
-      if (!list.some(u => u.username?.toLowerCase().trim() === 'admin')) {
-        list.unshift(DEFAULT_ADMIN_USERS[0]);
-      }
-      if (!list.some(u => u.username?.toLowerCase().trim() === 'gestor')) {
-        list.splice(1, 0, DEFAULT_ADMIN_USERS[1]);
-      }
-    }
-
-    return list;
+    return finalList;
   })();
 
-  const result = await withTimeout(fetchPromise, 3500, fallback);
-  if (result && result.length > 0) {
-    try {
-      localStorage.setItem('gpa_cached_admin_users', JSON.stringify(result));
-    } catch (e) {}
-  }
-  return result || fallback;
+  const fallback = Array.from(mergedMap.values());
+  return await withTimeout(fetchPromise, 8000, fallback);
 }
 
 // Save or update an admin user in Firestore and LocalStorage
@@ -941,18 +980,20 @@ export async function saveAdminUser(user: AdminUser): Promise<AdminUser> {
     ...user,
     id,
     username: cleanUsername,
+    name: user.name || user.username || cleanUsername,
     passcode: String(user.passcode || '').trim(),
     status: user.status || 'active',
-    active: true
+    active: user.active !== false,
+    updatedAt: new Date().toISOString()
   };
 
-  // 1. Immediately persist to LocalStorage for zero-delay offline reliability
+  // 1. Immediately persist to LocalStorage
   let updatedList: AdminUser[] = [];
   try {
     const cached = localStorage.getItem('gpa_cached_admin_users');
     const list: AdminUser[] = cached ? JSON.parse(cached) : [...DEFAULT_ADMIN_USERS];
     const idx = list.findIndex(u => 
-      (u.id && u.id === id) || 
+      (u.id && u.id.toLowerCase().trim() === id.toLowerCase().trim()) || 
       (u.username && u.username.toLowerCase().trim().replace(/^@/, '') === cleanUsername)
     );
     if (idx >= 0) {
@@ -961,18 +1002,17 @@ export async function saveAdminUser(user: AdminUser): Promise<AdminUser> {
       list.push(userToSave);
     }
     updatedList = list;
-    localStorage.setItem('gpa_cached_admin_users', JSON.stringify(list));
+    safeSetItem('gpa_cached_admin_users', JSON.stringify(list));
   } catch (e) {
     console.warn('LocalStorage save error:', e);
   }
 
-  // 2. Persist directly inside general_settings (100% reliable across all clients and devices)
+  // 2. Persist to dedicated individual collection doc in gpa_admin_users
   try {
-    const configRef = doc(db, CONFIG_COLLECTION, 'general_settings');
-    const usersToSave = updatedList.length > 0 ? updatedList : [userToSave];
-    await setDoc(configRef, { adminUsers: usersToSave }, { merge: true });
+    const docRef = doc(db, ADMIN_USERS_COLLECTION, cleanUsername);
+    await setDoc(docRef, userToSave, { merge: true });
   } catch (err) {
-    console.warn('Firestore general_settings adminUsers save error:', err);
+    console.warn('Firestore doc save error in gpa_admin_users:', err);
   }
 
   // 3. Persist to central registry doc
@@ -982,11 +1022,14 @@ export async function saveAdminUser(user: AdminUser): Promise<AdminUser> {
     await setDoc(regRef, { users: usersToReg, updatedAt: new Date().toISOString() }, { merge: true });
   } catch (err) {}
 
-  // 4. Persist to individual collection doc
+  // 4. Persist directly inside general_settings
   try {
-    const docRef = doc(db, ADMIN_USERS_COLLECTION, cleanUsername);
-    await setDoc(docRef, userToSave, { merge: true });
-  } catch (err) {}
+    const configRef = doc(db, CONFIG_COLLECTION, 'general_settings');
+    const usersToSave = updatedList.length > 0 ? updatedList : [userToSave];
+    await setDoc(configRef, { adminUsers: usersToSave }, { merge: true });
+  } catch (err) {
+    console.warn('Firestore general_settings adminUsers save error:', err);
+  }
 
   return userToSave;
 }
@@ -1001,9 +1044,14 @@ export async function deleteAdminUser(id: string): Promise<void> {
     if (cached) {
       const list: AdminUser[] = JSON.parse(cached);
       updatedList = list.filter(u => u.id !== id && u.username?.toLowerCase().trim().replace(/^@/, '') !== cleanId);
-      localStorage.setItem('gpa_cached_admin_users', JSON.stringify(updatedList));
+      safeSetItem('gpa_cached_admin_users', JSON.stringify(updatedList));
     }
   } catch (e) {}
+
+  // Delete individual doc
+  try {
+    await deleteDoc(doc(db, ADMIN_USERS_COLLECTION, cleanId));
+  } catch (err) {}
 
   // Update in general_settings
   try {
@@ -1020,11 +1068,6 @@ export async function deleteAdminUser(id: string): Promise<void> {
       await setDoc(regRef, { users: updatedList, updatedAt: new Date().toISOString() }, { merge: true });
     }
   } catch (err) {}
-
-  // Delete individual doc
-  try {
-    await deleteDoc(doc(db, ADMIN_USERS_COLLECTION, cleanId));
-  } catch (err) {}
 }
 
 // Status and expiry validator for admin users
@@ -1039,7 +1082,7 @@ export function handleAdminStatusAndExpiry(user: AdminUser): { success: boolean;
   }
 
   // Check if account is blocked
-  if (user.status === 'blocked') {
+  if (user.status === 'blocked' || user.active === false) {
     if (user.blockExpiresAt) {
       const now = new Date();
       const expiry = new Date(user.blockExpiresAt);
@@ -1057,12 +1100,16 @@ export function handleAdminStatusAndExpiry(user: AdminUser): { success: boolean;
 // Verify login with username and passcode
 export async function verifyAdminLogin(username: string, passcode: string): Promise<{ success: boolean; user?: AdminUser; error?: string }> {
   const rawUsername = (username || '').trim();
-  const normalizedUsername = rawUsername.toLowerCase().replace(/^@/, '');
-  const cleanPasscode = (passcode || '').trim();
+  const normalizedUsername = rawUsername.toLowerCase().replace(/^@/, '').trim();
+  const cleanPasscode = String(passcode || '').trim();
+
+  if (!rawUsername || !cleanPasscode) {
+    return { success: false, error: 'Por favor, introduza o utilizador e o código de acesso.' };
+  }
 
   // Master & Pre-configured shortcuts
   const isMasterPasscode = ['gpa2026', 'admin@gpa', 'gpa'].includes(cleanPasscode);
-  const isMasterUser = normalizedUsername === 'admin' || normalizedUsername === 'gpa2026' || normalizedUsername === '';
+  const isMasterUser = normalizedUsername === 'admin' || normalizedUsername === 'gpa2026';
   const isGestorUser = normalizedUsername === 'gestor';
 
   const defaultMasterUser = DEFAULT_ADMIN_USERS[0];
@@ -1075,144 +1122,112 @@ export async function verifyAdminLogin(username: string, passcode: string): Prom
     const uUser = (u.username || '').toLowerCase().trim().replace(/^@/, '');
     const uName = (u.name || '').toLowerCase().trim();
     const uId = (u.id || '').toLowerCase().trim();
+    const uPhone = (u.whatsappNumber || '').trim().replace(/[^0-9]/g, '');
     const target = normalizedUsername;
+    const targetPhone = target.replace(/[^0-9]/g, '');
 
     const usernameMatches = 
       uUser === target || 
       uName === target || 
       uId === target ||
-      (target === 'admin' && (u.role === 'owner' || u.role === 'superadmin')) ||
-      (target === 'gestor' && (u.role === 'superadmin' || u.username === 'gestor'));
+      (targetPhone.length >= 6 && uPhone && uPhone.includes(targetPhone)) ||
+      (target === 'admin' && (u.role === 'owner' || u.role === 'superadmin' || u.username === 'admin')) ||
+      (target === 'gestor' && (u.username === 'gestor'));
 
     const passcodeMatches = 
       String(u.passcode || '').trim() === cleanPasscode || 
       (isMasterUser && isMasterPasscode) ||
       (isGestorUser && cleanPasscode === 'gpa2026');
 
-    return usernameMatches && passcodeMatches;
-  };
-
-  // Fallback helper to match strictly by passcode if username was omitted or defaulted
-  const checkPasscodeOnlyMatch = (u: AdminUser): boolean => {
-    if (!u || !u.passcode) return false;
-    return String(u.passcode).trim() === cleanPasscode;
+    return Boolean(usernameMatches && passcodeMatches);
   };
 
   try {
-    // 1. Check cached LocalStorage users immediately (0ms)
-    const cached = localStorage.getItem('gpa_cached_admin_users');
-    let localList: AdminUser[] = [];
-    if (cached) {
-      try {
-        localList = JSON.parse(cached);
-        const localMatch = localList.find(checkUserMatch) || (cleanPasscode && localList.find(checkPasscodeOnlyMatch));
-        if (localMatch) {
-          const result = handleAdminStatusAndExpiry(localMatch);
+    // 1. Fetch all admins reliably from merged storage (LocalStorage + Firestore)
+    const allAdmins = await getAdminUsers();
+    
+    // Find matching user
+    const matched = allAdmins.find(checkUserMatch);
+    
+    if (matched) {
+      const result = handleAdminStatusAndExpiry(matched);
+      if (result.success && result.user) {
+        result.user.isOnline = true;
+        return result;
+      }
+      return result;
+    }
+
+    // 2. Direct document lookup fallback in gpa_admin_users
+    try {
+      const docRef = doc(db, ADMIN_USERS_COLLECTION, normalizedUsername);
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        const user = { id: snap.id, ...snap.data() } as AdminUser;
+        if (checkUserMatch(user) || String(user.passcode || '').trim() === cleanPasscode) {
+          const result = handleAdminStatusAndExpiry(user);
           if (result.success && result.user) {
             result.user.isOnline = true;
             return result;
           }
-        }
-      } catch (e) {}
-    }
-
-    // 2. Query all users from Firestore (via general_settings & registries)
-    try {
-      const allAdmins = await getAdminUsers();
-      const matched = allAdmins.find(checkUserMatch) || (cleanPasscode && allAdmins.find(checkPasscodeOnlyMatch));
-      if (matched) {
-        const result = handleAdminStatusAndExpiry(matched);
-        if (result.success && result.user) {
-          result.user.isOnline = true;
           return result;
         }
       }
     } catch (e) {}
 
-    // 3. Check direct Firestore document
-    const fetchDoc = async () => {
-      const docRef = doc(db, ADMIN_USERS_COLLECTION, normalizedUsername);
-      return await getDoc(docRef);
-    };
-    const snap = await withTimeout(fetchDoc(), 2500, null as any);
-
-    if (snap && typeof snap.exists === 'function' && snap.exists()) {
-      const user = { id: snap.id, ...snap.data() } as AdminUser;
-      if (String(user.passcode || '').trim() === cleanPasscode || (isMasterUser && isMasterPasscode)) {
-        const result = handleAdminStatusAndExpiry(user);
-        if (result.success && result.user) {
-          result.user.isOnline = true;
-          return result;
-        }
-      }
-      return { success: false, error: 'Código de acesso incorreto.' };
-    }
-
-    // 4. Check hardcoded master, gestor & staff credentials
+    // 3. Check hardcoded master, gestor & staff credentials
     if (isMasterUser && isMasterPasscode) {
       return { success: true, user: defaultMasterUser };
     }
     if ((isGestorUser && isMasterPasscode) || (cleanPasscode === 'gpa2026' && normalizedUsername === 'gestor')) {
       return { success: true, user: defaultGestorUser };
     }
-    if ((normalizedUsername === 'comercial 1' || normalizedUsername === 'comercial' || cleanPasscode === 'dtp')) {
+    if ((normalizedUsername === 'comercial 1' || normalizedUsername === 'comercial') && (cleanPasscode === 'dtp' || isMasterPasscode)) {
       return { success: true, user: defaultCommercialUser };
     }
 
+    // 4. LocalStorage emergency fallback
+    try {
+      const cached = localStorage.getItem('gpa_cached_admin_users');
+      if (cached) {
+        const list: AdminUser[] = JSON.parse(cached);
+        const localMatch = list.find(checkUserMatch);
+        if (localMatch) {
+          return handleAdminStatusAndExpiry(localMatch);
+        }
+      }
+    } catch (e) {}
+
     return { 
       success: false, 
-      error: 'Utilizador ou código de acesso incorretos. Utilize o utilizador predefinido: admin ou gestor com o código: gpa2026.' 
+      error: 'Utilizador ou código de acesso incorretos. Verifique o nome de utilizador e o código introduzidos.' 
     };
   } catch (err) {
     console.warn('Firebase login attempt fallback:', err);
+    try {
+      const cached = localStorage.getItem('gpa_cached_admin_users');
+      if (cached) {
+        const list: AdminUser[] = JSON.parse(cached);
+        const localMatch = list.find(checkUserMatch);
+        if (localMatch) {
+          return handleAdminStatusAndExpiry(localMatch);
+        }
+      }
+    } catch (e) {}
+
     if (isMasterUser && isMasterPasscode) {
       return { success: true, user: defaultMasterUser };
     }
     if (isGestorUser && (isMasterPasscode || cleanPasscode === 'gpa2026')) {
       return { success: true, user: defaultGestorUser };
     }
-    if ((normalizedUsername === 'comercial 1' || normalizedUsername === 'comercial' || cleanPasscode === 'dtp')) {
+    if ((normalizedUsername === 'comercial 1' || normalizedUsername === 'comercial') && (cleanPasscode === 'dtp' || isMasterPasscode)) {
       return { success: true, user: defaultCommercialUser };
     }
-    return { success: false, error: 'Utilizador ou código incorretos.' };
+    return { success: false, error: 'Utilizador ou código de acesso incorretos.' };
   }
 }
 
-// Helper to check status, block or silence expiration, and save the updated status if needed
-async function handleAdminStatusAndExpiry(user: AdminUser): Promise<{ success: boolean; user?: AdminUser; error?: string }> {
-  const now = new Date();
-  
-  // Check if blocked and if expiration has passed
-  if (user.status === 'blocked') {
-    if (user.blockExpiresAt) {
-      const expiry = new Date(user.blockExpiresAt);
-      if (now > expiry) {
-        // Expiration passed! Lift block
-        user.status = 'active';
-        user.blockExpiresAt = null;
-        await saveAdminUser(user);
-      } else {
-        const formattedDate = expiry.toLocaleString('pt-PT');
-        return { success: false, error: `Esta conta está bloqueada temporariamente até ${formattedDate}.` };
-      }
-    } else {
-      return { success: false, error: 'Esta conta está bloqueada permanentemente. Contacte o Administrador Principal.' };
-    }
-  }
-  
-  // Check if silenced and if expiration has passed
-  if (user.status === 'silenced' && user.silenceExpiresAt) {
-    const expiry = new Date(user.silenceExpiresAt);
-    if (now > expiry) {
-      // Expiration passed! Lift silence
-      user.status = 'active';
-      user.silenceExpiresAt = null;
-      await saveAdminUser(user);
-    }
-  }
-  
-  return { success: true, user };
-}
 
 /**
  * --- CHATBOT ASSISTANT CONVERSATION PERSISTENCE ---
@@ -1291,68 +1306,83 @@ export async function getNextCommercialRotation(): Promise<AdminUser | null> {
  */
 export async function getStoreProducts(): Promise<StoreProduct[]> {
   const cached = localStorage.getItem('gpa_cached_store_products');
-  const fallback = cached ? JSON.parse(cached) : DEFAULT_STORE_PRODUCTS;
+  let localProducts: StoreProduct[] = [];
+  if (cached) {
+    try {
+      localProducts = JSON.parse(cached);
+    } catch (e) {}
+  }
 
   const fetchPromise = (async () => {
     try {
       const prodsRef = collection(db, STORE_PRODUCTS_COLLECTION);
       const snap = await getDocs(prodsRef);
-      if (!snap.empty) {
-        const list: StoreProduct[] = [];
-        snap.forEach((docSnap) => {
-          list.push({ id: docSnap.id, ...docSnap.data() } as StoreProduct);
-        });
-        const localList: StoreProduct[] = cached ? JSON.parse(cached) : [];
-        const mergedMap = new Map<string, StoreProduct>();
-        localList.forEach(p => mergedMap.set(p.id, p));
-        list.forEach(p => mergedMap.set(p.id, p));
-        const finalProducts = Array.from(mergedMap.values());
-        localStorage.setItem('gpa_cached_store_products', JSON.stringify(finalProducts));
-        return finalProducts;
+      const mergedMap = new Map<string, StoreProduct>();
+      DEFAULT_STORE_PRODUCTS.forEach(p => mergedMap.set(p.id, p));
+      
+      if (localProducts.length > 0) {
+        localProducts.forEach(p => mergedMap.set(p.id, p));
       }
+
+      if (!snap.empty) {
+        snap.forEach((docSnap) => {
+          const data = docSnap.data() as any;
+          mergedMap.set(docSnap.id, { id: docSnap.id, ...data } as StoreProduct);
+        });
+      }
+      const finalProducts = Array.from(mergedMap.values());
+      try {
+        safeSetItem('gpa_cached_store_products', JSON.stringify(finalProducts));
+      } catch (e) {}
+      return finalProducts;
     } catch (err) {
       console.warn('Firestore getStoreProducts error:', err);
+      if (localProducts.length > 0) return localProducts;
     }
-    return fallback;
+    return DEFAULT_STORE_PRODUCTS;
   })();
 
-  return withTimeout(fetchPromise, 15000, fallback);
+  return withTimeout(fetchPromise, 8000, localProducts.length > 0 ? localProducts : DEFAULT_STORE_PRODUCTS);
 }
 
 export async function addStoreProduct(product: Omit<StoreProduct, 'id'>): Promise<StoreProduct> {
-  let docId = 'prod_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+  const docId = 'prod_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+  const newProduct: StoreProduct = { id: docId, ...product };
+  
   try {
-    const prodsRef = collection(db, STORE_PRODUCTS_COLLECTION);
-    const docRef = await addDoc(prodsRef, product);
-    docId = docRef.id;
+    const docRef = doc(db, STORE_PRODUCTS_COLLECTION, docId);
+    await setDoc(docRef, newProduct, { merge: true });
   } catch (err) {
     console.warn('Firestore addStoreProduct falhou ou offline. A guardar no cache local:', err);
   }
 
-  const newProduct: StoreProduct = { id: docId, ...product };
-  
   // Update local cache
-  const cached = localStorage.getItem('gpa_cached_store_products');
-  const list: StoreProduct[] = cached ? JSON.parse(cached) : [...DEFAULT_STORE_PRODUCTS];
-  const updated = [newProduct, ...list.filter(p => p.id !== docId)];
-  localStorage.setItem('gpa_cached_store_products', JSON.stringify(updated));
+  try {
+    const cached = localStorage.getItem('gpa_cached_store_products');
+    const list: StoreProduct[] = cached ? JSON.parse(cached) : [...DEFAULT_STORE_PRODUCTS];
+    const updated = [newProduct, ...list.filter(p => p.id !== docId)];
+    safeSetItem('gpa_cached_store_products', JSON.stringify(updated));
+  } catch (e) {}
 
   return newProduct;
 }
 
 export async function updateStoreProduct(id: string, updates: Partial<StoreProduct>): Promise<void> {
+  const cleanUpdates = { ...updates, id };
   try {
     const docRef = doc(db, STORE_PRODUCTS_COLLECTION, id);
-    await updateDoc(docRef, updates);
+    await setDoc(docRef, cleanUpdates, { merge: true });
   } catch (err) {
     console.warn('Firestore updateStoreProduct falhou ou offline. A atualizar cache local:', err);
   }
 
   // Update local cache
-  const cached = localStorage.getItem('gpa_cached_store_products');
-  const list: StoreProduct[] = cached ? JSON.parse(cached) : [...DEFAULT_STORE_PRODUCTS];
-  const updated = list.map(p => p.id === id ? { ...p, ...updates } : p);
-  localStorage.setItem('gpa_cached_store_products', JSON.stringify(updated));
+  try {
+    const cached = localStorage.getItem('gpa_cached_store_products');
+    const list: StoreProduct[] = cached ? JSON.parse(cached) : [...DEFAULT_STORE_PRODUCTS];
+    const updated = list.map(p => p.id === id ? { ...p, ...cleanUpdates } : p);
+    safeSetItem('gpa_cached_store_products', JSON.stringify(updated));
+  } catch (e) {}
 }
 
 export async function deleteStoreProduct(id: string): Promise<void> {
@@ -1364,40 +1394,51 @@ export async function deleteStoreProduct(id: string): Promise<void> {
   }
 
   // Update local cache
-  const cached = localStorage.getItem('gpa_cached_store_products');
-  if (cached) {
-    const list: StoreProduct[] = JSON.parse(cached);
-    const updated = list.filter(p => p.id !== id);
-    localStorage.setItem('gpa_cached_store_products', JSON.stringify(updated));
-  }
+  try {
+    const cached = localStorage.getItem('gpa_cached_store_products');
+    if (cached) {
+      const list: StoreProduct[] = JSON.parse(cached);
+      const updated = list.filter(p => p.id !== id);
+      safeSetItem('gpa_cached_store_products', JSON.stringify(updated));
+    }
+  } catch (e) {}
 }
 
 export function subscribeStoreProducts(callback: (products: StoreProduct[]) => void): () => void {
   const prodsRef = collection(db, STORE_PRODUCTS_COLLECTION);
   return onSnapshot(prodsRef, (snap) => {
-    const list: StoreProduct[] = [];
-    snap.forEach((d) => {
-      list.push({ id: d.id, ...d.data() } as StoreProduct);
-    });
-    if (list.length > 0) {
-      const cached = localStorage.getItem('gpa_cached_store_products');
-      const localList: StoreProduct[] = cached ? JSON.parse(cached) : [];
-      const mergedMap = new Map<string, StoreProduct>();
-      localList.forEach(p => mergedMap.set(p.id, p));
-      list.forEach(p => mergedMap.set(p.id, p));
-      const finalProducts = Array.from(mergedMap.values());
-      localStorage.setItem('gpa_cached_store_products', JSON.stringify(finalProducts));
-      callback(finalProducts);
-    } else {
-      const cached = localStorage.getItem('gpa_cached_store_products');
-      const fallback = cached ? JSON.parse(cached) : DEFAULT_STORE_PRODUCTS;
-      callback(fallback);
+    const mergedMap = new Map<string, StoreProduct>();
+    DEFAULT_STORE_PRODUCTS.forEach(p => mergedMap.set(p.id, p));
+
+    const cached = localStorage.getItem('gpa_cached_store_products');
+    if (cached) {
+      try {
+        const localList: StoreProduct[] = JSON.parse(cached);
+        localList.forEach(p => mergedMap.set(p.id, p));
+      } catch (e) {}
     }
+
+    if (!snap.empty) {
+      snap.forEach((d) => {
+        mergedMap.set(d.id, { id: d.id, ...d.data() } as StoreProduct);
+      });
+    }
+
+    const finalProducts = Array.from(mergedMap.values());
+    try {
+      safeSetItem('gpa_cached_store_products', JSON.stringify(finalProducts));
+    } catch (e) {}
+    callback(finalProducts);
   }, (err) => {
     console.error('Real-time store products sync error:', err);
     const cached = localStorage.getItem('gpa_cached_store_products');
-    const fallback = cached ? JSON.parse(cached) : DEFAULT_STORE_PRODUCTS;
-    callback(fallback);
+    if (cached) {
+      try {
+        callback(JSON.parse(cached));
+        return;
+      } catch (e) {}
+    }
+    callback(DEFAULT_STORE_PRODUCTS);
   });
 }
 
@@ -1430,7 +1471,7 @@ export async function getStoreCategories(): Promise<StoreCategory[]> {
   const result = await withTimeout(fetchPromise, 5000, fallback);
   if (result && result.length > 0) {
     try {
-      localStorage.setItem('gpa_cached_store_categories', JSON.stringify(result));
+      safeSetItem('gpa_cached_store_categories', JSON.stringify(result));
     } catch (e) {}
   }
   return result || fallback;
@@ -1456,7 +1497,7 @@ export async function saveStoreCategory(category: StoreCategory): Promise<StoreC
     } else {
       list.push(catToSave);
     }
-    localStorage.setItem('gpa_cached_store_categories', JSON.stringify(list));
+    safeSetItem('gpa_cached_store_categories', JSON.stringify(list));
   } catch (e) {}
   return catToSave;
 }
@@ -1474,7 +1515,7 @@ export async function deleteStoreCategory(id: string): Promise<void> {
     if (cached) {
       const list: StoreCategory[] = JSON.parse(cached);
       const updated = list.filter(c => c.id !== id);
-      localStorage.setItem('gpa_cached_store_categories', JSON.stringify(updated));
+      safeSetItem('gpa_cached_store_categories', JSON.stringify(updated));
     }
   } catch (e) {}
 }
@@ -1487,7 +1528,7 @@ export function subscribeStoreCategories(callback: (categories: StoreCategory[])
       list.push({ id: d.id, ...d.data() } as StoreCategory);
     });
     if (list.length > 0) {
-      try { localStorage.setItem('gpa_cached_store_categories', JSON.stringify(list)); } catch (e) {}
+      try { safeSetItem('gpa_cached_store_categories', JSON.stringify(list)); } catch (e) {}
       callback(list);
     } else {
       const cached = localStorage.getItem('gpa_cached_store_categories');
@@ -1530,7 +1571,7 @@ export async function getServicesData(): Promise<Service[]> {
   const result = await withTimeout(fetchPromise, 5000, fallback);
   if (result && result.length > 0) {
     try {
-      localStorage.setItem('gpa_cached_services', JSON.stringify(result));
+      safeSetItem('gpa_cached_services', JSON.stringify(result));
     } catch (e) {}
   }
   return result || fallback;
@@ -1553,7 +1594,7 @@ export async function saveServiceData(service: Service): Promise<Service> {
   } else {
     list.push(service);
   }
-  localStorage.setItem('gpa_cached_services', JSON.stringify(list));
+  safeSetItem('gpa_cached_services', JSON.stringify(list));
   return service;
 }
 

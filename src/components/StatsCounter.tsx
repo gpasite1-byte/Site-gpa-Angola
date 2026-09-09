@@ -17,9 +17,8 @@ function AnimatedNumber({ icon: Icon, targetValue, suffix, label }: StatItemProp
     const end = targetValue;
     if (start === end) return;
 
-    // Fast increment based on target size
-    const duration = 1500; // ms
-    const increment = Math.ceil(end / (duration / 16)); // ~60fps
+    const duration = 1500;
+    const increment = Math.ceil(end / (duration / 16));
     
     const timer = setInterval(() => {
       start += increment;
@@ -34,21 +33,20 @@ function AnimatedNumber({ icon: Icon, targetValue, suffix, label }: StatItemProp
     return () => clearInterval(timer);
   }, [targetValue]);
 
-  // Format with thousand separator
   const formatNumber = (num: number) => {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   };
 
   return (
-    <div className="flex flex-col items-center text-center p-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xs hover:bg-white/10 hover:border-white/20 transition-all duration-300 shadow-sm h-full justify-center">
-      <div className="p-3 bg-brand-orange/15 rounded-2xl text-brand-orange mb-3 shadow-inner">
+    <div className="flex flex-col items-center text-center p-6 rounded-lg bg-black/60 border border-white/10 hover:border-[#AF9B72]/50 transition-all duration-300 shadow-md h-full justify-center group">
+      <div className="p-3 bg-white/5 group-hover:bg-[#AF9B72]/20 rounded-xl text-[#AF9B72] mb-3 transition-colors">
         <Icon className="w-6 h-6 stroke-[2]" />
       </div>
-      <div className="font-display font-black text-2xl sm:text-3xl text-brand-orange tracking-tight">
+      <div className="font-akrobat font-black text-4xl sm:text-5xl text-[#AF9B72] tracking-tight leading-none">
         {formatNumber(count)}
         {suffix}
       </div>
-      <div className="text-xs sm:text-sm text-white font-sans font-medium mt-1">
+      <div className="text-xs sm:text-sm text-neutral-300 font-montserrat font-semibold mt-2 uppercase tracking-wide">
         {label}
       </div>
     </div>
@@ -64,17 +62,14 @@ export default function StatsCounter({ provinciasAtendidas = 21, anosExperiencia
   const stats = [
     { icon: Users, targetValue: 1248, suffix: '+', label: 'Clientes Satisfeitos' },
     { icon: CheckSquare, targetValue: 12450, suffix: '+', label: 'Projetos Concluídos' },
-    { icon: Calendar, targetValue: anosExperiencia, suffix: '+', label: 'Anos de Experiência' },
+    { icon: Calendar, targetValue: anosExperiencia, suffix: '+', label: 'Anos de Liderança' },
     { icon: MapPin, targetValue: provinciasAtendidas, suffix: '', label: 'Províncias Atendidas' },
     { icon: Smile, targetValue: 98, suffix: '%', label: 'Taxa de Satisfação' }
   ];
 
   return (
-    <section className="bg-[#21185f] py-12 sm:py-16 border-y border-white/5 relative overflow-hidden">
-      {/* Background patterns */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.04)_0%,transparent_70%)] pointer-events-none"></div>
-      
-      <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+    <section className="bg-[#050505] py-14 border-t border-b border-[#AF9B72]/30 relative overflow-hidden">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6">
           {stats.map((stat, idx) => (
             <motion.div

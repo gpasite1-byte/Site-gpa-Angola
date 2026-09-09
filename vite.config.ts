@@ -28,6 +28,8 @@ export default defineConfig(() => {
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: {
         ignored: [
+          '**/dist/**',
+          '**/node_modules/**',
           '**/*.mp4',
           '**/*.webm',
           '**/*.mov',

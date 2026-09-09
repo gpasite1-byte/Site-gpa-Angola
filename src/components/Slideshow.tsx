@@ -90,7 +90,7 @@ export default function Slideshow() {
   const ActiveIcon = activeSlide.icon;
 
   return (
-    <section id="production" className="pt-48 sm:pt-56 md:pt-64 lg:pt-72 pb-24 bg-[#f9fbff] border-t border-b border-slate-100 overflow-hidden relative scroll-mt-36">
+    <section id="production" className="py-16 sm:py-24 bg-[#ffffff] border-t border-slate-100 overflow-hidden relative scroll-mt-24">
       {/* Background Orbs */}
       <div className="absolute top-[-100px] left-[-100px] w-96 h-96 bg-brand-orange/5 rounded-full blur-[120px] pointer-events-none"></div>
       <div className="absolute bottom-[10%] right-[-50px] w-96 h-96 bg-indigo-600/5 rounded-full blur-[120px] pointer-events-none"></div>
@@ -98,20 +98,14 @@ export default function Slideshow() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
          {/* Section Header */}
-        <div className="text-center max-w-4xl mx-auto mb-14 mt-8 sm:mt-12 space-y-5">
-          <div className="inline-block text-sm font-mono font-bold tracking-widest text-brand-orange uppercase bg-brand-orange/10 px-4 py-1.5 rounded-full">
-            Destaques da Produção
+        <div className="text-center max-w-4xl mx-auto mb-14 mt-8 sm:mt-12 space-y-4">
+          <div className="inline-block text-xs font-akrobat font-black tracking-widest text-[#AF9B72] uppercase bg-[#AF9B72]/15 border border-[#AF9B72]/30 px-4 py-1.5 rounded-full">
+            PARQUE DE MÁQUINAS & PRODUÇÃO
           </div>
-          <h2 
-            style={{ fontFamily: 'Italiana, serif', fontSize: '59px', fontStyle: 'normal', lineHeight: '48px' }}
-            className="text-3xl sm:text-4.5xl lg:text-5xl tracking-tight text-brand-purple"
-          >
-            Rigor Industrial em Cada Detalhe
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-akrobat font-black uppercase tracking-tight text-black">
+            RIGOR INDUSTRIAL EM <span className="text-[#AF9B72]">CADA DETALHE</span>
           </h2>
-          <p 
-            style={{ fontFamily: '"Noto Sans Old Italic", "Noto Sans", sans-serif', fontWeight: 'normal' }}
-            className="text-base sm:text-lg text-slate-700 leading-relaxed"
-          >
+          <p className="text-sm sm:text-base text-neutral-600 font-montserrat leading-relaxed max-w-2xl mx-auto">
             Navegue pelos principais setores produtivos da GPA Angola e conheça o compromisso de qualidade que nos posiciona como líderes de mercado.
           </p>
         </div>
