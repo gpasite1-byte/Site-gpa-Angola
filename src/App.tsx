@@ -91,6 +91,17 @@ export default function App() {
       const cachedConfig = localStorage.getItem('gpa_cached_site_config');
       if (cachedConfig) {
         const parsed = JSON.parse(cachedConfig);
+        if (!parsed.footerLogoUrl || parsed.footerLogoUrl.includes('18')) {
+          parsed.footerLogoUrl = '/GPA 19 ANOS.png';
+        }
+        if (!parsed.companyPhones || parsed.companyPhones.length < 4 || parsed.companyPhones[0].includes('000 000')) {
+          parsed.companyPhones = [
+            '+244 945 119 409',
+            '+244 933 417 569',
+            '+244 953 979 343',
+            '+244 994 943 828'
+          ];
+        }
         setLiveConfig(parsed);
         if (parsed.videoUrl) {
           setVideoUrl(parsed.videoUrl);
@@ -458,26 +469,55 @@ export default function App() {
                       Clique em qualquer número para ligar ou abrir diretamente uma conversa de WhatsApp:
                     </p>
                     <div className="flex flex-col gap-3">
-                      {(liveConfig?.companyPhones && liveConfig.companyPhones.length > 0 ? liveConfig.companyPhones : ['+244 945 119 409', '+244 933 417 569', '+244 953 979 343']).map((phone) => {
-                        const clean = phone.replace(/\D/g, '');
-                        return (
-                          <a 
-                            key={phone} 
-                            href={`https://wa.me/${clean}?text=Ol%C3%A1%20GPA%20Angola%2C%20gostaria%20de%20solicitar%20um%20or%C3%A7amento.`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center justify-between px-5 py-3.5 rounded-xl bg-white/5 hover:bg-[#0B63E5] border border-white/10 hover:border-[#0B63E5] text-base font-bold font-akrobat uppercase transition-all shadow-md group cursor-pointer"
-                          >
-                            <span className="flex items-center gap-3">
-                              <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
-                              {phone}
-                            </span>
-                            <span className="text-xs font-montserrat font-medium text-slate-300 group-hover:text-white flex items-center gap-1">
-                              WhatsApp / Chamar <ArrowRight className="w-4 h-4" />
-                            </span>
-                          </a>
-                        );
-                      })}
+                      {(() => {
+                        const depts = ['Comercial', 'Orçamentos', 'Produção', 'Geral & WhatsApp'];
+                        const phones = (liveConfig?.companyPhones && liveConfig.companyPhones.length > 0 && !liveConfig.companyPhones[0].includes('000 000'))
+                          ? liveConfig.companyPhones
+                          : ['+244 945 119 409', '+244 933 417 569', '+244 953 979 343', '+244 994 943 828'];
+
+                        return phones.map((phone, idx) => {
+                          const clean = phone.replace(/\D/g, '');
+                          const dept = depts[idx] || 'Atendimento';
+                          return (
+                            <div 
+                              key={phone} 
+                              className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-white/5 hover:bg-slate-800/80 border border-white/10 hover:border-[#0B63E5] transition-all shadow-md group gap-3"
+                            >
+                              <div className="flex items-center gap-3">
+                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <div>
+                                  <span className="text-[10px] uppercase font-mono font-bold text-[#0B63E5] tracking-wider block">
+                                    {dept}
+                                  </span>
+                                  <span className="text-base font-bold font-akrobat tracking-wide text-white">
+                                    {phone}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 self-end sm:self-auto">
+                                <a
+                                  href={`tel:${phone.replace(/\s+/g, '')}`}
+                                  className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-[#0B63E5] text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                                  title={`Ligar para ${dept}`}
+                                >
+                                  <Phone className="w-3.5 h-3.5" />
+                                  <span>Ligar</span>
+                                </a>
+                                <a 
+                                  href={`https://wa.me/${clean}?text=Ol%C3%A1%20GPA%20Angola%2C%20gostaria%20de%20falar%20com%20o%20departamento%20de%20${encodeURIComponent(dept)}.`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="px-3.5 py-1.5 rounded-lg bg-[#25D366] hover:bg-[#1ebd5a] text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+                                  title={`WhatsApp ${dept}`}
+                                >
+                                  <MessageSquare className="w-3.5 h-3.5 fill-current" />
+                                  <span>WhatsApp</span>
+                                </a>
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
                     </div>
                   </div>
 
@@ -651,7 +691,17 @@ export default function App() {
           {renderPageContent()}
         </main>
 
-        <Footer onScrollToSection={handleScrollToSection} onOpenAdmin={() => setIsAdminView(true)} logoUrl={liveConfig?.logoUrl} footerLogoUrl={liveConfig?.footerLogoUrl} companyNif={liveConfig?.companyNif} companyYear={liveConfig?.companyYear} companyPhones={liveConfig?.companyPhones} partners={livePartners} hidePartnersMarquee={activeSection === 'contact'} />
+        <Footer 
+          onScrollToSection={handleScrollToSection} 
+          onOpenAdmin={() => setIsAdminView(true)} 
+          logoUrl={liveConfig?.logoUrl} 
+          footerLogoUrl={(!liveConfig?.footerLogoUrl || liveConfig.footerLogoUrl.includes('18')) ? '/GPA 19 ANOS.png' : liveConfig.footerLogoUrl} 
+          companyNif={liveConfig?.companyNif} 
+          companyYear={liveConfig?.companyYear} 
+          companyPhones={liveConfig?.companyPhones} 
+          partners={livePartners} 
+          hidePartnersMarquee={activeSection === 'contact'} 
+        />
 
         <WhatsAppWidget companyPhones={liveConfig?.companyPhones} />
 

@@ -16,6 +16,7 @@ import {
 } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 import { Testimonial, QuoteRequest, Project, ChatMessage, AssistantChatSession, StoreProduct, AdminUser, StoreCategory, Service } from './types';
+export type { AdminUser } from './types';
 import { PROJECTS, DEFAULT_STORE_PRODUCTS, DEFAULT_STORE_CATEGORIES, SERVICES } from './data';
 
 // Initialize Firebase
@@ -203,11 +204,11 @@ const DEFAULT_CONFIG: SiteConfig = {
   heroBg3: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=2015&auto=format&fit=crop',
 
   logoUrl: 'https://i.ibb.co/v6FWV57q/LOGO-GPA.png',
-  footerLogoUrl: 'https://i.ibb.co/v4JJZZXF/LOGO-GPA-18-BRANCA-1.png',
+  footerLogoUrl: '/GPA 19 ANOS.png',
   companyNif: '5002498223',
   companyYear: '2026',
   statsProvinciasAtendidas: 21,
-  statsAnosExperiencia: 18,
+  statsAnosExperiencia: 19,
 
   // Default global background
   bgImageUrl: '',
@@ -324,7 +325,13 @@ const DEFAULT_CONFIG: SiteConfig = {
 export async function getSiteConfig(): Promise<SiteConfig> {
   const configRef = doc(db, CONFIG_COLLECTION, 'general_settings');
   const cached = localStorage.getItem('gpa_cached_site_config');
-  const fallback = cached ? JSON.parse(cached) : DEFAULT_CONFIG;
+  let fallback: SiteConfig = cached ? JSON.parse(cached) : DEFAULT_CONFIG;
+  if (!fallback.footerLogoUrl || fallback.footerLogoUrl.includes('18')) {
+    fallback.footerLogoUrl = '/GPA 19 ANOS.png';
+  }
+  if (!fallback.companyPhones || fallback.companyPhones.length < 4 || fallback.companyPhones[0].includes('000 000')) {
+    fallback.companyPhones = DEFAULT_CONFIG.companyPhones;
+  }
 
   const fetchPromise = (async () => {
     try {
@@ -339,6 +346,12 @@ export async function getSiteConfig(): Promise<SiteConfig> {
           productPrices: mergedPrices, 
           productMinQtys: mergedMinQtys 
         } as SiteConfig;
+        if (!data.footerLogoUrl || data.footerLogoUrl.includes('18')) {
+          data.footerLogoUrl = '/GPA 19 ANOS.png';
+        }
+        if (!data.companyPhones || data.companyPhones.length < 4 || data.companyPhones[0].includes('000 000')) {
+          data.companyPhones = DEFAULT_CONFIG.companyPhones;
+        }
         try { safeSetItem('gpa_cached_site_config', JSON.stringify(data)); } catch (e) {}
         return data;
       } else {

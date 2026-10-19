@@ -24,14 +24,26 @@ export default function Footer({
   onScrollToSection, 
   onOpenAdmin, 
   logoUrl, 
-  footerLogoUrl, 
+  footerLogoUrl = '/GPA 19 ANOS.png', 
   companyNif = '5417000000', 
   companyYear = '2008', 
-  companyPhones = ['+244 923 000 000', '+244 931 000 000'], 
+  companyPhones = ['+244 945 119 409', '+244 933 417 569', '+244 953 979 343', '+244 994 943 828'], 
   partners, 
   hidePartnersMarquee 
 }: FooterProps) {
-  const primaryPhone = companyPhones[0] || '+244 923 000 000';
+  const activeFooterLogo = (!footerLogoUrl || footerLogoUrl.includes('18')) ? '/GPA 19 ANOS.png' : footerLogoUrl;
+
+  const phoneDepartments = ['Comercial', 'Orçamentos', 'Produção', 'Geral & WhatsApp'];
+  const phoneItems = (companyPhones && companyPhones.length > 0 && !companyPhones[0].includes('000 000'))
+    ? companyPhones.map((phone, idx) => ({ phone, dept: phoneDepartments[idx] || 'Atendimento' }))
+    : [
+        { phone: '+244 945 119 409', dept: 'Comercial' },
+        { phone: '+244 933 417 569', dept: 'Orçamentos' },
+        { phone: '+244 953 979 343', dept: 'Produção' },
+        { phone: '+244 994 943 828', dept: 'Geral & WhatsApp' },
+      ];
+
+  const primaryPhone = phoneItems[0]?.phone || '+244 945 119 409';
   const cleanPhone = primaryPhone.replace(/\D/g, '');
 
   return (
@@ -43,16 +55,17 @@ export default function Footer({
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             
-            {/* Col 1: Logo */}
+            {/* Col 1: Logo GPA 19 ANOS */}
             <div className="footer-column-1 space-y-4">
               <div 
                 className="footer-logo cursor-pointer"
                 onClick={() => onScrollToSection('home')}
+                title="GPA Angola - 19 Anos"
               >
                 <img 
-                  src={footerLogoUrl || logoUrl || "https://i.ibb.co/v6FWV57q/LOGO-GPA.png"} 
-                  alt="Logo Rodapé Website GPA Angola" 
-                  className="h-20 sm:h-24 md:h-28 w-auto object-contain drop-shadow-xl"
+                  src={activeFooterLogo} 
+                  alt="Logo GPA 19 Anos Rodapé" 
+                  className="h-20 sm:h-24 md:h-28 w-auto object-contain drop-shadow-xl hover:scale-105 transition-transform duration-300"
                   referrerPolicy="no-referrer"
                 />
               </div>
@@ -87,14 +100,41 @@ export default function Footer({
               </ul>
             </div>
 
-            {/* Col 4: Atendimento & Redes */}
+            {/* Col 4: Atendimento com Todos os Números da Versão Anterior & Redes */}
             <div className="footer-column-4 space-y-3">
               <h2>Atendimento</h2>
-              <p className="text-sm text-neutral-300">Luanda, Angola</p>
-              <p className="text-sm text-neutral-300">Tel: {primaryPhone}</p>
-              <p className="text-sm text-neutral-300">contacto@gpaangola.com</p>
+              <p className="text-sm text-neutral-300">Luanda, Angola (Viana)</p>
 
-              <div className="pt-3 flex items-center space-x-3.5 text-white">
+              {/* Lista Completa de Telefones de Atendimento */}
+              <div className="space-y-1.5 pt-1">
+                <span className="text-[11px] uppercase tracking-wider text-[#0B63E5] font-bold block">
+                  Linhas de Atendimento:
+                </span>
+                {phoneItems.map((item) => {
+                  const clean = item.phone.replace(/\D/g, '');
+                  return (
+                    <div key={item.phone} className="flex items-center justify-between text-xs py-1 border-b border-white/5">
+                      <span className="text-neutral-400 font-medium">{item.dept}:</span>
+                      <a 
+                        href={`https://wa.me/${clean}?text=Ol%C3%A1%20GPA%20Angola%2C%20gostaria%20de%20falar%20com%20o%20departamento%20de%20${encodeURIComponent(item.dept)}.`} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-neutral-200 hover:text-[#25D366] font-semibold transition-colors flex items-center gap-1.5"
+                        title={`Falar com ${item.dept} no WhatsApp`}
+                      >
+                        <Phone className="w-3 h-3 text-[#0B63E5]" />
+                        <span>{item.phone}</span>
+                      </a>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <p className="text-xs text-neutral-300 pt-1">
+                <span className="text-neutral-400">E-mail:</span> contacto@gpaangola.com
+              </p>
+
+              <div className="pt-2 flex items-center space-x-3.5 text-white">
                 <a href="https://www.instagram.com/gpa_angola/" target="_blank" rel="noopener noreferrer" title="Instagram GPA Angola (@gpa_angola)" className="hover:text-[#0B63E5] transition-colors">
                   <Instagram className="w-5 h-5" />
                 </a>

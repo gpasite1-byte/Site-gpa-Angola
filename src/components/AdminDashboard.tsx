@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Lock, 
-  Settings, 
-  Users, 
-  Image as ImageIcon, 
-  FileText, 
-  Check, 
-  Trash2, 
-  Plus, 
-  Save, 
-  LogOut, 
-  Upload, 
-  ChevronRight, 
-  Eye, 
-  EyeOff, 
+import {
+  Lock,
+  Settings,
+  Users,
+  Image as ImageIcon,
+  FileText,
+  Check,
+  Trash2,
+  Plus,
+  Save,
+  LogOut,
+  Upload,
+  ChevronRight,
+  Eye,
+  EyeOff,
   Sparkles,
   RefreshCw,
   Search,
@@ -29,19 +29,19 @@ import {
   Edit2,
   X
 } from 'lucide-react';
-import { 
-  getSiteConfig, 
-  updateSiteConfig, 
-  getPartners, 
-  savePartner, 
-  deletePartner, 
-  getGalleryItems, 
-  saveGalleryItem, 
-  deleteGalleryItem, 
-  getFirebaseQuotes, 
-  deleteFirebaseQuote, 
-  getFirebaseTestimonials, 
-  saveFirebaseTestimonial, 
+import {
+  getSiteConfig,
+  updateSiteConfig,
+  getPartners,
+  savePartner,
+  deletePartner,
+  getGalleryItems,
+  saveGalleryItem,
+  deleteGalleryItem,
+  getFirebaseQuotes,
+  deleteFirebaseQuote,
+  getFirebaseTestimonials,
+  saveFirebaseTestimonial,
   deleteFirebaseTestimonial,
   verifyAdminPasscode,
   updateAdminPasscode,
@@ -64,7 +64,8 @@ import {
   getAdminUsers,
   saveAdminUser,
   deleteAdminUser,
-  subscribeAssistantChats
+  subscribeAssistantChats,
+  verifyAdminLogin
 } from '../firebaseClient';
 import { Testimonial, QuoteRequest, Project, AssistantChatSession, StoreProduct, AdminUser, StoreCategory, Service } from '../types';
 import { PROJECTS, DEFAULT_STORE_PRODUCTS, DEFAULT_STORE_CATEGORIES, SERVICES } from '../data';
@@ -128,11 +129,11 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
   const [loginUsername, setLoginUsername] = useState('');
   const [currentAdmin, setCurrentAdmin] = useState<AdminUser | null>(null);
   const [adminList, setAdminList] = useState<AdminUser[]>([]);
-  
+
   // Create / Edit Admin State
   const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState<AdminUser | null>(null);
-  
+
   // Create/Edit form fields
   const [formAdminUsername, setFormAdminUsername] = useState('');
   const [formAdminName, setFormAdminName] = useState('');
@@ -176,9 +177,10 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
     heroBg1: '',
     heroBg2: '',
     heroBg3: '',
-    
+
     // Newly requested NIF, logo, year fields
     logoUrl: '',
+    footerLogoUrl: '/GPA 19 ANOS.png',
     companyNif: '',
     companyYear: '',
 
@@ -206,7 +208,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
   const [quotes, setQuotes] = useState<QuoteRequest[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [storeProducts, setStoreProducts] = useState<StoreProduct[]>([]);
-  
+
   // Store Categories States
   const [storeCategories, setStoreCategories] = useState<StoreCategory[]>(DEFAULT_STORE_CATEGORIES);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -236,7 +238,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
     imageUrl: '',
     badge: ''
   });
-  
+
   // Store Product Form & Modal States
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<StoreProduct | null>(null);
@@ -342,11 +344,11 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
         setCurrentAdmin(result.user);
         sessionStorage.setItem('gpa_admin_authenticated', 'true');
         sessionStorage.setItem('gpa_current_admin', JSON.stringify(result.user));
-        
+
         // Setup initial active tab based on permissions
         const hasPerm = (tab: string): boolean => {
           if (result.user?.role === 'owner' || result.user?.role === 'superadmin') return true;
-          switch(tab) {
+          switch (tab) {
             case 'general': return !!result.user?.permissions?.editGeneral || !!result.user?.permissions?.canManageConfig;
             case 'partners': return !!result.user?.permissions?.editPartners || !!result.user?.permissions?.canManageConfig;
             case 'gallery': return !!result.user?.permissions?.editGallery || !!result.user?.permissions?.canManageGallery;
@@ -361,12 +363,12 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
             default: return false;
           }
         };
-        
+
         const allowed = ['general', 'partners', 'gallery', 'portfolio', 'prices', 'services', 'store-products', 'categories', 'quotes', 'testimonials', 'admins'].filter(hasPerm);
         if (allowed.length > 0) {
           setActiveTab(allowed[0] as any);
         }
-        
+
         loadAllData();
       } else {
         setAuthError(result.error || 'Utilizador ou código de acesso incorretos. Verifique os dados introduzidos.');
@@ -486,16 +488,16 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
 
   const checkWritePermission = (): boolean => {
     if (!currentAdmin) return false;
-    
+
     // Owner is Admin Principal and has unrestricted access
     if (currentAdmin.role === 'owner') return true;
-    
+
     // Check if blocked
     if (currentAdmin.status === 'blocked') {
       showStatus('Esta conta está bloqueada e não pode efetuar alterações.', true);
       return false;
     }
-    
+
     // Check if silenced
     if (currentAdmin.status === 'silenced') {
       const now = new Date();
@@ -510,7 +512,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
         return false;
       }
     }
-    
+
     return true;
   };
 
@@ -520,12 +522,12 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
       showStatus('Apenas o Administrador Principal pode gerir administradores.', true);
       return;
     }
-    
+
     if (!formAdminUsername.trim() || !formAdminName.trim() || !formAdminPasscode.trim()) {
       showStatus('Por favor, preencha todos os campos obrigatórios.', true);
       return;
     }
-    
+
     setIsLoading(true);
     try {
       const payload: AdminUser = {
@@ -541,14 +543,14 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
         whatsappNumber: formAdminWhatsapp.trim(),
         isOnline: formAdminIsOnline
       };
-      
+
       await saveAdminUser(payload);
       showStatus(`Administrador ${payload.name} guardado com sucesso!`);
-      
+
       // Reset form
       setIsCreatingAdmin(false);
       setSelectedAdmin(null);
-      
+
       // Reload admins
       const updated = await getAdminUsers();
       setAdminList(updated);
@@ -565,7 +567,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
       return;
     }
     if (!confirm(`Deseja realmente remover o utilizador ${name}?`)) return;
-    
+
     setIsLoading(true);
     try {
       await deleteAdminUser(id);
@@ -660,11 +662,11 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
           }
 
           ctx.drawImage(img, 0, 0, width, height);
-          
+
           // Check if file is logo/icon/brand
           const isLogoOrSvg = file.name.toLowerCase().includes('logo') || file.name.toLowerCase().includes('marca') || file.type.includes('png') || file.type.includes('svg');
           let compressedBase64 = canvas.toDataURL(isLogoOrSvg ? 'image/png' : 'image/jpeg', quality);
-          
+
           // If PNG exceeds 150KB, compress to high quality JPEG to prevent storage failures
           if (compressedBase64.length > 150000) {
             compressedBase64 = canvas.toDataURL('image/jpeg', 0.65);
@@ -702,7 +704,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
 
   // File to cloud/base64 converter helper with immediate persistence support for config fields
   const handleFileUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>, 
+    e: React.ChangeEvent<HTMLInputElement>,
     onComplete: (url: string) => void,
     autoSaveField?: keyof SiteConfig
   ) => {
@@ -1461,10 +1463,10 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
       q.urgency,
       q.timestamp
     ]);
-    
-    const csvContent = "data:text/csv;charset=utf-8," 
+
+    const csvContent = "data:text/csv;charset=utf-8,"
       + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    
+
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -1474,7 +1476,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
     document.body.removeChild(link);
   };
 
-  const filteredQuotes = quotes.filter(q => 
+  const filteredQuotes = quotes.filter(q =>
     q.clientName.toLowerCase().includes(quoteSearch.toLowerCase()) ||
     q.email.toLowerCase().includes(quoteSearch.toLowerCase()) ||
     q.phone.includes(quoteSearch) ||
@@ -1483,17 +1485,17 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans relative z-50 overflow-hidden">
-      
+
       {/* Background Video Layer with Dark Overlay for Admin Area */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none bg-cover bg-center">
-        <video 
-          key={videoUrl || '/GPA/Cinematic_D_animation_seaml.mp4'} 
-          className="page-video opacity-30 object-cover w-full h-full" 
-          autoPlay 
-          muted 
-          loop 
-          playsInline 
-          poster="/GPA/hero_poster.jpg" 
+        <video
+          key={videoUrl || '/GPA/Cinematic_D_animation_seaml.mp4'}
+          className="page-video opacity-30 object-cover w-full h-full"
+          autoPlay
+          muted
+          loop
+          playsInline
+          poster="/GPA/hero_poster.jpg"
           preload="metadata"
         >
           <source src={videoUrl || '/GPA/Cinematic_D_animation_seaml.mp4'} type="video/mp4" />
@@ -1545,7 +1547,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
       {/* LOGIN VIEW */}
       {!isAuthenticated ? (
         <div className="flex-1 flex items-center justify-center p-6 relative z-10">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="w-full max-w-md bg-slate-900 border border-white/10 rounded-3xl p-8 shadow-2xl relative overflow-hidden"
@@ -1633,7 +1635,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
       ) : (
         /* MAIN DASHBOARD PANEL */
         <div className="flex-1 flex flex-col md:flex-row min-h-0">
-          
+
           {/* SIDEBAR TABS BAR (HIGH VISIBILITY, CONTRAST & FULL MOBILE RESPONSIVENESS) */}
           <aside className="w-full md:w-72 bg-slate-950/95 border-b md:border-b-0 md:border-r border-slate-800/90 flex flex-col justify-between py-2.5 md:py-5 shadow-[4px_0_30px_rgba(0,0,0,0.6)] relative z-20 shrink-0 backdrop-blur-md">
             <div className="px-2 md:px-3.5 flex md:flex-col overflow-x-auto md:overflow-y-auto no-scrollbar gap-1.5 md:space-y-2.5 pb-1 md:pb-0">
@@ -1645,11 +1647,10 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editGeneral) && (
                 <button
                   onClick={() => setActiveTab('general')}
-                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
-                    activeTab === 'general' 
-                      ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
-                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
-                  }`}
+                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${activeTab === 'general'
+                    ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]'
+                    : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
+                    }`}
                 >
                   <Settings className={`w-4.5 h-4.5 ${activeTab === 'general' ? 'text-white' : 'text-amber-400'}`} />
                   <span>Textos & Contactos</span>
@@ -1660,11 +1661,10 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                 <button
                   key={module.id}
                   onClick={() => setActiveTab(module.id)}
-                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
-                    activeTab === module.id 
-                      ? 'text-white shadow-[0_10px_25px_rgba(15,23,42,0.4)] border-white/25 scale-[1.02]' 
-                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
-                  }`}
+                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${activeTab === module.id
+                    ? 'text-white shadow-[0_10px_25px_rgba(15,23,42,0.4)] border-white/25 scale-[1.02]'
+                    : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
+                    }`}
                   style={activeTab === module.id ? { background: `linear-gradient(135deg, ${module.accent}, rgba(15,23,42,0.9))` } : undefined}
                 >
                   <span className="flex h-6 w-6 md:h-7 md:w-7 items-center justify-center rounded-lg border border-white/20 text-xs md:text-sm font-bold shadow-xs" style={{ backgroundColor: `${module.accent}30`, color: module.accent }}>
@@ -1677,11 +1677,10 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editPartners) && (
                 <button
                   onClick={() => setActiveTab('partners')}
-                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
-                    activeTab === 'partners' 
-                      ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
-                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
-                  }`}
+                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${activeTab === 'partners'
+                    ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]'
+                    : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
+                    }`}
                 >
                   <Users className={`w-4.5 h-4.5 ${activeTab === 'partners' ? 'text-white' : 'text-blue-400'}`} />
                   <span>Marcas Parceiras</span>
@@ -1691,11 +1690,10 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editGallery) && (
                 <button
                   onClick={() => setActiveTab('gallery')}
-                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
-                    activeTab === 'gallery' 
-                      ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
-                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
-                  }`}
+                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${activeTab === 'gallery'
+                    ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]'
+                    : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
+                    }`}
                 >
                   <ImageIcon className={`w-4.5 h-4.5 ${activeTab === 'gallery' ? 'text-white' : 'text-emerald-400'}`} />
                   <span>Galeria de Produção</span>
@@ -1705,11 +1703,10 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editPortfolio) && (
                 <button
                   onClick={() => setActiveTab('portfolio')}
-                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
-                    activeTab === 'portfolio' 
-                      ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
-                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
-                  }`}
+                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${activeTab === 'portfolio'
+                    ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]'
+                    : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
+                    }`}
                 >
                   <Sparkles className={`w-4.5 h-4.5 ${activeTab === 'portfolio' ? 'text-white' : 'text-purple-400'}`} />
                   <span>Portfólio de Sucesso</span>
@@ -1719,11 +1716,10 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editProducts) && (
                 <button
                   onClick={() => setActiveTab('prices')}
-                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
-                    activeTab === 'prices' 
-                      ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
-                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
-                  }`}
+                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${activeTab === 'prices'
+                    ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]'
+                    : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
+                    }`}
                 >
                   <FileSpreadsheet className={`w-4.5 h-4.5 ${activeTab === 'prices' ? 'text-white' : 'text-amber-400'}`} />
                   <span>Preçário & Taxas</span>
@@ -1733,11 +1729,10 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editGeneral) && (
                 <button
                   onClick={() => setActiveTab('services')}
-                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
-                    activeTab === 'services' 
-                      ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
-                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
-                  }`}
+                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${activeTab === 'services'
+                    ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]'
+                    : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
+                    }`}
                 >
                   <Sparkles className={`w-4.5 h-4.5 ${activeTab === 'services' ? 'text-white' : 'text-amber-400'}`} />
                   <span>Serviços & Fotografias</span>
@@ -1747,11 +1742,10 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editProducts) && (
                 <button
                   onClick={() => setActiveTab('store-products')}
-                  className={`shrink-0 md:w-full flex items-center justify-between space-x-2 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
-                    activeTab === 'store-products' 
-                      ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
-                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
-                  }`}
+                  className={`shrink-0 md:w-full flex items-center justify-between space-x-2 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${activeTab === 'store-products'
+                    ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]'
+                    : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
+                    }`}
                 >
                   <div className="flex items-center space-x-2 md:space-x-3">
                     <ShoppingBag className={`w-4.5 h-4.5 ${activeTab === 'store-products' ? 'text-white' : 'text-amber-400'}`} />
@@ -1766,11 +1760,10 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editProducts) && (
                 <button
                   onClick={() => setActiveTab('categories')}
-                  className={`shrink-0 md:w-full flex items-center justify-between space-x-2 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
-                    activeTab === 'categories' 
-                      ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
-                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
-                  }`}
+                  className={`shrink-0 md:w-full flex items-center justify-between space-x-2 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${activeTab === 'categories'
+                    ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]'
+                    : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
+                    }`}
                 >
                   <div className="flex items-center space-x-2 md:space-x-3">
                     <Tag className={`w-4.5 h-4.5 ${activeTab === 'categories' ? 'text-white' : 'text-orange-400'}`} />
@@ -1790,11 +1783,10 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.viewQuotes) && (
                 <button
                   onClick={() => setActiveTab('quotes')}
-                  className={`shrink-0 md:w-full flex items-center justify-between space-x-2 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
-                    activeTab === 'quotes' 
-                      ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
-                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
-                  }`}
+                  className={`shrink-0 md:w-full flex items-center justify-between space-x-2 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${activeTab === 'quotes'
+                    ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]'
+                    : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
+                    }`}
                 >
                   <div className="flex items-center space-x-2 md:space-x-3">
                     <FileText className={`w-4.5 h-4.5 ${activeTab === 'quotes' ? 'text-white' : 'text-amber-400'}`} />
@@ -1811,11 +1803,10 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.permissions.editPortfolio) && (
                 <button
                   onClick={() => setActiveTab('testimonials')}
-                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
-                    activeTab === 'testimonials' 
-                      ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
-                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
-                  }`}
+                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${activeTab === 'testimonials'
+                    ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]'
+                    : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
+                    }`}
                 >
                   <MessageSquare className={`w-4.5 h-4.5 ${activeTab === 'testimonials' ? 'text-white' : 'text-teal-400'}`} />
                   <span>Depoimentos</span>
@@ -1825,11 +1816,10 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.role === 'staff') && (
                 <button
                   onClick={() => setActiveTab('comercial')}
-                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
-                    activeTab === 'comercial' 
-                      ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-[0_10px_25px_rgba(16,185,129,0.35)] border-emerald-400/40 scale-[1.02]' 
-                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
-                  }`}
+                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${activeTab === 'comercial'
+                    ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-[0_10px_25px_rgba(16,185,129,0.35)] border-emerald-400/40 scale-[1.02]'
+                    : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
+                    }`}
                 >
                   <MessageCircle className={`w-4.5 h-4.5 ${activeTab === 'comercial' ? 'text-white' : 'text-emerald-400'}`} />
                   <span>Atendimento WhatsApp</span>
@@ -1844,11 +1834,10 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.role === 'superadmin' || currentAdmin.permissions.manageAdmins) && (
                 <button
                   onClick={() => setActiveTab('admins')}
-                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
-                    activeTab === 'admins' 
-                      ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
-                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
-                  }`}
+                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${activeTab === 'admins'
+                    ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]'
+                    : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
+                    }`}
                 >
                   <Users className={`w-4.5 h-4.5 ${activeTab === 'admins' ? 'text-white' : 'text-amber-400'}`} />
                   <span className="font-extrabold">Gestão de Equipa & Admins</span>
@@ -1858,11 +1847,10 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
               {currentAdmin && (currentAdmin.role === 'owner' || currentAdmin.role === 'superadmin') && (
                 <button
                   onClick={() => setActiveTab('security')}
-                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${
-                    activeTab === 'security' 
-                      ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]' 
-                      : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
-                  }`}
+                  className={`shrink-0 md:w-full flex items-center space-x-2 md:space-x-3 px-3 md:px-3.5 py-2 md:py-3 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap ${activeTab === 'security'
+                    ? 'bg-gradient-to-r from-brand-orange to-amber-500 text-white shadow-[0_10px_25px_rgba(245,158,11,0.35)] border-amber-400/40 scale-[1.02]'
+                    : 'bg-slate-900/80 text-slate-100 border-slate-800/80 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-sm'
+                    }`}
                 >
                   <Lock className={`w-4.5 h-4.5 ${activeTab === 'security' ? 'text-white' : 'text-red-400'}`} />
                   <span>Segurança Geral</span>
@@ -1922,14 +1910,13 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
 
           {/* CONTENT PANEL BODY */}
           <main className="flex-1 bg-slate-950/85 backdrop-blur-md p-6 md:p-8 overflow-y-auto min-h-0 relative z-10">
-            
+
             {/* Real-time status toast */}
             {statusMessage && (
-              <div className={`fixed bottom-6 right-6 z-50 rounded-2xl p-4 shadow-xl border flex items-center space-x-3 font-medium text-xs tracking-wide ${
-                statusMessage.isError 
-                  ? 'bg-red-950/95 text-red-200 border-red-800' 
-                  : 'bg-emerald-950/95 text-emerald-200 border-emerald-800'
-              }`}>
+              <div className={`fixed bottom-6 right-6 z-50 rounded-2xl p-4 shadow-xl border flex items-center space-x-3 font-medium text-xs tracking-wide ${statusMessage.isError
+                ? 'bg-red-950/95 text-red-200 border-red-800'
+                : 'bg-emerald-950/95 text-emerald-200 border-emerald-800'
+                }`}>
                 <div className={`w-2 h-2 rounded-full ${statusMessage.isError ? 'bg-red-400' : 'bg-emerald-400 animate-ping'}`}></div>
                 <span>{statusMessage.text}</span>
               </div>
@@ -2052,7 +2039,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                   <div className="border border-white/10 bg-slate-900/40 p-4 rounded-xl space-y-3 mt-3">
                     <label className="block text-xs font-mono uppercase text-slate-400 font-bold">Contactos Alternativos (Header & Rodapé)</label>
                     <p className="text-[11px] text-slate-500">Adicione ou remova os números de telefone secundários exibidos no cabeçalho e rodapé do site.</p>
-                    
+
                     <div className="space-y-2 max-h-40 overflow-y-auto">
                       {(siteConfig.companyPhones || []).map((phone, idx) => (
                         <div key={idx} className="flex items-center justify-between bg-slate-950/80 px-3 py-2 rounded-lg border border-white/5">
@@ -2071,7 +2058,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                         </div>
                       ))}
                     </div>
-                    
+
                     <div className="flex items-center space-x-2">
                       <input
                         type="text"
@@ -2183,7 +2170,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                     <h3 className="text-sm font-display font-bold text-white uppercase tracking-wider text-brand-orange">
                       Secção "Sobre Nós" (Quem Somos)
                     </h3>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div>
                         <label className="block text-xs font-mono uppercase text-slate-400 font-bold mb-1.5">Título Curto (Badge)</label>
@@ -2306,7 +2293,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                       Identidade da Empresa & Logomarca
                     </h3>
                     <p className="text-xs text-slate-400">Configure aqui o logótipo principal da empresa, o NIF e o ano de rodapé exibidos publicamente.</p>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div>
                         <label className="block text-xs font-mono uppercase text-slate-400 font-bold mb-1.5">NIF da Empresa</label>
@@ -2448,7 +2435,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                     <p className="text-xs text-slate-400">
                       Adicione uma imagem ou logótipo alternativo para servir como marca d'água semi-transparente no fundo do website (por baixo do cabeçalho). A opacidade pode ser regulada para garantir legibilidade ideal.
                     </p>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div>
                         <label className="block text-xs font-mono uppercase text-slate-400 font-bold mb-1.5">Opacidade do Fundo (Ex: 0.1 para 10%, 0.25 para 25%)</label>
@@ -2553,7 +2540,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                       <span>Alojamento Ilimitado na Nuvem (ImgBB Cloud Storage API)</span>
                     </h3>
                     <p className="text-xs text-slate-400">
-                      Adicione a sua Chave de API gratuita do ImgBB (obtenha gratuitamente em <a href="https://api.imgbb.com/" target="_blank" rel="noreferrer" className="text-brand-orange underline">api.imgbb.com</a>). 
+                      Adicione a sua Chave de API gratuita do ImgBB (obtenha gratuitamente em <a href="https://api.imgbb.com/" target="_blank" rel="noreferrer" className="text-brand-orange underline">api.imgbb.com</a>).
                       Quando ativado, todas as fotos carregadas no Painel Admin são enviadas automaticamente para o ImgBB de forma permanente e sem perdas!
                     </p>
                     <div>
@@ -2579,9 +2566,9 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                       <span>Preços Unitários & Taxas de Base da Calculadora</span>
                     </h3>
                     <p className="text-xs text-slate-400">Configure os valores mínimos (Taxa Base) e custos individuais por unidade que alimentam o motor de cálculo automático de orçamentos.</p>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      
+
                       {/* Impressão */}
                       <div className="bg-slate-950/45 border border-white/5 rounded-xl p-4 space-y-3">
                         <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">1. Impressão Offset & Digital</h4>
@@ -2793,7 +2780,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                       <span>Preços Unitários & Mínimos Recomendados por Artigo (Catálogo PDF)</span>
                     </h3>
                     <p className="text-xs text-slate-400">Configure os valores unitários e as quantidades mínimas recomendadas para cada produto listado no nosso catálogo oficial (PDF).</p>
-                    
+
                     <div className="bg-slate-950/45 border border-white/5 rounded-xl p-5 space-y-4">
                       {/* Standard products grouped by service category */}
                       {[
@@ -2937,11 +2924,10 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                       <button
                         key={cat.id}
                         onClick={() => setProdCategoryFilter(cat.id)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors whitespace-nowrap ${
-                          prodCategoryFilter === cat.id
-                            ? 'bg-brand-orange text-white font-bold'
-                            : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'
-                        }`}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors whitespace-nowrap ${prodCategoryFilter === cat.id
+                          ? 'bg-brand-orange text-white font-bold'
+                          : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'
+                          }`}
                       >
                         {cat.label}
                       </button>
@@ -2993,9 +2979,8 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                                 </span>
                               )}
                               <span
-                                className={`absolute top-2 right-2 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
-                                  prod.inStock !== false ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'
-                                }`}
+                                className={`absolute top-2 right-2 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${prod.inStock !== false ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                                  }`}
                               >
                                 {prod.inStock !== false ? 'Em Stock' : 'Esgotado'}
                               </span>
@@ -3206,14 +3191,12 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                     <div key={user.id} className="bg-slate-900 border border-white/10 rounded-2xl p-5 space-y-4 shadow-lg flex flex-col justify-between">
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <span className={`text-[10px] font-mono font-bold uppercase px-2.5 py-1 rounded-full ${
-                            user.role === 'superadmin' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                          }`}>
+                          <span className={`text-[10px] font-mono font-bold uppercase px-2.5 py-1 rounded-full ${user.role === 'superadmin' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                            }`}>
                             {user.role === 'superadmin' ? 'Super Admin' : user.role}
                           </span>
-                          <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
-                            user.active !== false ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
-                          }`}>
+                          <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${user.active !== false ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                            }`}>
                             {user.active !== false ? 'Ativo' : 'Inativo'}
                           </span>
                         </div>
@@ -3300,7 +3283,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   {partners.map((p, idx) => (
                     <div key={p.id} className="bg-slate-900 border border-white/10 rounded-2xl p-5 space-y-4 relative group">
-                      
+
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-mono text-slate-400 font-bold uppercase">
                           Marca #{idx + 1}
@@ -3435,7 +3418,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {gallery.map((item, idx) => (
                     <div key={item.id} className="bg-slate-900 border border-white/10 rounded-2xl p-5 flex flex-col justify-between relative group">
-                      
+
                       <div className="space-y-3">
                         <div className="flex justify-between items-center">
                           <span className="text-[10px] font-mono text-slate-400 font-bold uppercase">
@@ -3560,7 +3543,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                 <div className="grid grid-cols-1 gap-6">
                   {projects.map((proj, idx) => (
                     <div key={proj.id} className="bg-slate-900 border border-white/10 rounded-2xl p-6 space-y-5 relative group">
-                      
+
                       <div className="flex justify-between items-center border-b border-white/5 pb-3">
                         <span className="text-xs font-mono text-slate-400 font-bold uppercase">
                           Projeto #{idx + 1}: {proj.title || 'Sem Título'}
@@ -3601,7 +3584,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                                 className="hidden"
                               />
                             </label>
-                            
+
                             <input
                               type="text"
                               value={proj.image}
@@ -3692,7 +3675,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                         <span className="text-[10px] font-mono uppercase text-brand-orange font-bold tracking-wider block">
                           Características e Especificações Técnicas (Exibidos no Modal Expandido)
                         </span>
-                        
+
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                           {[0, 1, 2, 3].map((detailIdx) => {
                             const detailItem = proj.details?.[detailIdx] || { label: '', value: '' };
@@ -3733,7 +3716,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                           <span className="text-[10px] font-mono uppercase text-brand-orange font-bold tracking-wider block">
                             Fotos Adicionais do Caso de Sucesso (Slideshow Automático)
                           </span>
-                          
+
                           <label className="bg-slate-900 hover:bg-slate-800 border border-white/10 text-white font-bold py-1.5 px-3 rounded-lg text-[10px] flex items-center space-x-1 cursor-pointer transition-colors">
                             <Upload className="w-3 h-3 text-brand-orange" />
                             <span>Adicionar Várias Fotos</span>
@@ -3881,17 +3864,15 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                           <button
                             key={q.id}
                             onClick={() => setSelectedQuote(q)}
-                            className={`w-full text-left p-4 cursor-pointer transition-colors block ${
-                              selectedQuote?.id === q.id ? 'bg-brand-orange/10' : 'hover:bg-white/5'
-                            }`}
+                            className={`w-full text-left p-4 cursor-pointer transition-colors block ${selectedQuote?.id === q.id ? 'bg-brand-orange/10' : 'hover:bg-white/5'
+                              }`}
                           >
                             <div className="flex justify-between items-start">
                               <h4 className="text-xs font-bold text-white truncate max-w-[130px]">{q.clientName}</h4>
-                              <span className={`text-[8px] font-mono font-bold uppercase px-2 py-0.5 rounded-full ${
-                                q.urgency === 'alta' ? 'bg-red-950/40 text-red-400 border border-red-900/30' : 
-                                q.urgency === 'media' ? 'bg-amber-950/40 text-amber-400 border border-amber-900/30' : 
-                                'bg-slate-950/40 text-slate-400 border border-white/10'
-                              }`}>
+                              <span className={`text-[8px] font-mono font-bold uppercase px-2 py-0.5 rounded-full ${q.urgency === 'alta' ? 'bg-red-950/40 text-red-400 border border-red-900/30' :
+                                q.urgency === 'media' ? 'bg-amber-950/40 text-amber-400 border border-amber-900/30' :
+                                  'bg-slate-950/40 text-slate-400 border border-white/10'
+                                }`}>
                                 {q.urgency}
                               </span>
                             </div>
@@ -4170,7 +4151,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                             return (
                               <div key={pName} className="bg-slate-950 border border-white/5 rounded-xl p-4 flex flex-col justify-between space-y-3 hover:border-white/10 transition-all">
                                 <span className="text-xs font-bold text-white line-clamp-1">{pName}</span>
-                                
+
                                 <div className="grid grid-cols-2 gap-3.5">
                                   <div>
                                     <label className="block text-[10px] uppercase font-mono text-slate-400 mb-1">
@@ -4273,9 +4254,9 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
 
                 {/* CREATE / EDIT FORM */}
                 {isCreatingAdmin && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: -10 }} 
-                    animate={{ opacity: 1, y: 0 }} 
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
                     className="bg-slate-900 border border-white/10 rounded-2xl p-6 space-y-6"
                   >
                     <div className="flex justify-between items-center border-b border-white/5 pb-3">
@@ -4402,14 +4383,12 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                             <button
                               type="button"
                               onClick={() => setFormAdminIsOnline(!formAdminIsOnline)}
-                              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                                formAdminIsOnline ? 'bg-emerald-500' : 'bg-slate-700'
-                              }`}
+                              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${formAdminIsOnline ? 'bg-emerald-500' : 'bg-slate-700'
+                                }`}
                             >
                               <span
-                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                  formAdminIsOnline ? 'translate-x-5' : 'translate-x-0'
-                                }`}
+                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${formAdminIsOnline ? 'translate-x-5' : 'translate-x-0'
+                                  }`}
                               />
                             </button>
                             <span className={`text-xs font-semibold ${formAdminIsOnline ? 'text-emerald-400' : 'text-slate-400'}`}>
@@ -4423,7 +4402,7 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                         <span className="block text-[10px] uppercase font-mono font-bold text-brand-orange tracking-wider">
                           Permissões Granulares de Acesso
                         </span>
-                        
+
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                           <label className="flex items-center space-x-2.5 text-xs text-slate-300 hover:text-white cursor-pointer select-none">
                             <input
@@ -4549,24 +4528,22 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                           <div className="flex items-center space-x-3">
                             <span className="font-bold text-sm text-white">{adm.name}</span>
                             <span className="text-xs font-mono text-slate-500">@{adm.username}</span>
-                            <span className={`text-[10px] font-mono uppercase font-black px-2 py-0.5 rounded border ${
-                              adm.role === 'owner' 
-                                ? 'bg-amber-950/40 text-amber-400 border-amber-900/40' 
-                                : 'bg-blue-950/40 text-blue-400 border-blue-900/40'
-                            }`}>
+                            <span className={`text-[10px] font-mono uppercase font-black px-2 py-0.5 rounded border ${adm.role === 'owner'
+                              ? 'bg-amber-950/40 text-amber-400 border-amber-900/40'
+                              : 'bg-blue-950/40 text-blue-400 border-blue-900/40'
+                              }`}>
                               {adm.role === 'owner' ? 'Principal (Owner)' : 'Auxiliar (Staff)'}
                             </span>
                           </div>
 
                           <div className="flex flex-wrap items-center gap-2">
                             {/* Status badge */}
-                            <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full ${
-                              adm.status === 'active' 
-                                ? 'bg-emerald-950 text-emerald-400' 
-                                : adm.status === 'blocked' 
-                                ? 'bg-red-950 text-red-400' 
+                            <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full ${adm.status === 'active'
+                              ? 'bg-emerald-950 text-emerald-400'
+                              : adm.status === 'blocked'
+                                ? 'bg-red-950 text-red-400'
                                 : 'bg-amber-950 text-amber-400'
-                            }`}>
+                              }`}>
                               {adm.status === 'active' && '● Ativo'}
                               {adm.status === 'blocked' && '● Bloqueado'}
                               {adm.status === 'silenced' && '● Silenciado'}
@@ -4609,9 +4586,8 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                               </span>
                             )}
 
-                            <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${
-                              adm.isOnline ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-900/30' : 'bg-slate-950 text-slate-500 border border-white/5'
-                            }`}>
+                            <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${adm.isOnline ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-900/30' : 'bg-slate-950 text-slate-500 border border-white/5'
+                              }`}>
                               {adm.isOnline ? '● Online no Chat' : '○ Offline no Chat'}
                             </span>
                           </div>
@@ -4851,14 +4827,12 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                             const updated = { ...currentAdmin, isOnline: !currentAdmin.isOnline };
                             setCurrentAdmin(updated);
                           }}
-                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                            currentAdmin.isOnline ? 'bg-emerald-500' : 'bg-slate-700'
-                          }`}
+                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${currentAdmin.isOnline ? 'bg-emerald-500' : 'bg-slate-700'
+                            }`}
                         >
                           <span
-                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                              currentAdmin.isOnline ? 'translate-x-5' : 'translate-x-0'
-                            }`}
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${currentAdmin.isOnline ? 'translate-x-5' : 'translate-x-0'
+                              }`}
                           />
                         </button>
                         <span className={`text-xs font-semibold ${currentAdmin.isOnline ? 'text-emerald-400' : 'text-slate-400'}`}>
@@ -4926,11 +4900,10 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                               key={chat.id}
                               type="button"
                               onClick={() => setSelectedChat(chat)}
-                              className={`w-full text-left p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col space-y-1.5 ${
-                                isSelected 
-                                  ? 'bg-emerald-500/10 border-emerald-500/30' 
-                                  : 'bg-slate-950/40 border-white/5 hover:border-white/15'
-                              }`}
+                              className={`w-full text-left p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col space-y-1.5 ${isSelected
+                                ? 'bg-emerald-500/10 border-emerald-500/30'
+                                : 'bg-slate-950/40 border-white/5 hover:border-white/15'
+                                }`}
                             >
                               <div className="flex items-center justify-between">
                                 <span className="font-display font-bold text-xs text-slate-200">
@@ -4989,16 +4962,14 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                                     className={`flex ${isBot ? 'justify-start' : 'justify-end'}`}
                                   >
                                     <div
-                                      className={`max-w-[85%] rounded-2xl p-3 text-xs shadow-md ${
-                                        isBot
-                                          ? 'bg-slate-900 border border-white/5 text-slate-200 rounded-tl-none'
-                                          : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 rounded-tr-none'
-                                      }`}
+                                      className={`max-w-[85%] rounded-2xl p-3 text-xs shadow-md ${isBot
+                                        ? 'bg-slate-900 border border-white/5 text-slate-200 rounded-tl-none'
+                                        : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 rounded-tr-none'
+                                        }`}
                                     >
                                       <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
-                                      <div className={`text-[9px] mt-1.5 flex items-center justify-end space-x-1 ${
-                                        isBot ? 'text-slate-500' : 'text-emerald-500'
-                                      }`}>
+                                      <div className={`text-[9px] mt-1.5 flex items-center justify-end space-x-1 ${isBot ? 'text-slate-500' : 'text-emerald-500'
+                                        }`}>
                                         <span>{msg.timestamp}</span>
                                       </div>
                                     </div>
@@ -5186,14 +5157,12 @@ export default function AdminDashboard({ onClose, onRefreshSiteData, pageViews =
                   <button
                     type="button"
                     onClick={() => setProdForm({ ...prodForm, inStock: !prodForm.inStock })}
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      prodForm.inStock ? 'bg-emerald-500' : 'bg-slate-700'
-                    }`}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${prodForm.inStock ? 'bg-emerald-500' : 'bg-slate-700'
+                      }`}
                   >
                     <span
-                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                        prodForm.inStock ? 'translate-x-5' : 'translate-x-0'
-                      }`}
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${prodForm.inStock ? 'translate-x-5' : 'translate-x-0'
+                        }`}
                     />
                   </button>
                   <span className={`text-xs font-semibold ${prodForm.inStock ? 'text-emerald-400' : 'text-slate-400'}`}>

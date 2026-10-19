@@ -108,6 +108,12 @@ h1, h2, h3, h4, h5, h6 {
   color: #0B63E5;
 }
 
+.shop-modal {
+  margin-left: 28px;
+  display: inline-flex;
+  align-items: center;
+}
+
 .shop-modal .buy-button {
   background: linear-gradient(135deg, #0052CC 0%, #0B63E5 100%);
   color: #fff;

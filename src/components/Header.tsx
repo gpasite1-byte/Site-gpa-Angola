@@ -13,12 +13,19 @@ interface HeaderProps {
   companyPhones?: string[];
 }
 
+const DEFAULT_HEADER_PHONES = [
+  { phone: '+244 945 119 409', dept: 'Comercial' },
+  { phone: '+244 933 417 569', dept: 'Orçamentos' },
+  { phone: '+244 953 979 343', dept: 'Produção' },
+  { phone: '+244 994 943 828', dept: 'Geral & WhatsApp' },
+];
+
 export default function Header({ 
   onOpenQuoteCalculator, 
   onScrollToSection, 
   activeSection, 
   logoUrl, 
-  companyPhones = ['+244 923 000 000', '+244 931 000 000']
+  companyPhones = ['+244 945 119 409', '+244 933 417 569', '+244 953 979 343', '+244 994 943 828']
 }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -52,7 +59,12 @@ export default function Header({
     setIsMobileMenuOpen(false);
   };
 
-  const primaryPhone = companyPhones[0] || '+244 923 000 000';
+  const phoneDepartments = ['Comercial', 'Orçamentos', 'Produção', 'Geral & WhatsApp'];
+  const phoneItems = (companyPhones && companyPhones.length > 0 && !companyPhones[0].includes('000 000'))
+    ? companyPhones.map((phone, idx) => ({ phone, dept: phoneDepartments[idx] || 'Atendimento' }))
+    : DEFAULT_HEADER_PHONES;
+
+  const primaryPhone = phoneItems[0]?.phone || '+244 945 119 409';
   const cleanPhone = primaryPhone.replace(/\D/g, '');
 
   return (
@@ -73,8 +85,8 @@ export default function Header({
               <span className="text-[13px] font-medium tracking-wide">Pesquisar GPA Angola</span>
             </div>
 
-            {/* WhatsApp + Botão Compre / Orçamento */}
-            <div className="flex items-center space-x-5">
+            {/* WhatsApp + Botão Compre / Orçamento com distanciamento nítido */}
+            <div className="flex items-center">
               <a 
                 href={`https://wa.me/${cleanPhone}?text=Ol%C3%A1%20GPA%20Angola%2C%20gostaria%20de%20informa%C3%A7%C3%B5es%20sobre%20os%20vossos%20servi%C3%A7os.`} 
                 target="_blank" 
@@ -88,7 +100,8 @@ export default function Header({
                 <span>{primaryPhone}</span>
               </a>
 
-              <div className="shop-modal">
+              {/* Separador e distanciamento entre o número e o botão PEDIR ORÇAMENTO */}
+              <div className="shop-modal ml-6 sm:ml-8 pl-4 sm:pl-6 border-l border-slate-300/80">
                 <div 
                   onClick={onOpenQuoteCalculator}
                   className="buy-button"
@@ -313,27 +326,65 @@ export default function Header({
                   </button>
                 </div>
 
-                <div className="py-6 space-y-2">
+                <div className="py-5 space-y-2">
                   {navItems.map((item) => (
                     <button
                       key={item.id}
                       onClick={() => handleNavClick(item.id)}
-                      className="w-full text-left font-akrobat text-xl uppercase tracking-wider font-extrabold py-2.5 px-3 rounded hover:bg-white/5 hover:text-[#09ac53] transition-colors flex items-center justify-between"
+                      className="w-full text-left font-akrobat text-xl uppercase tracking-wider font-extrabold py-2 px-3 rounded hover:bg-white/5 hover:text-[#0B63E5] transition-colors flex items-center justify-between"
                     >
                       <span>{item.label}</span>
                       <ChevronRight className="w-4 h-4 text-neutral-500" />
                     </button>
                   ))}
                 </div>
+
+                {/* Linhas Diretas de Atendimento (Versão Anterior Restaurada) */}
+                <div className="border-t border-white/10 pt-4 mt-1 space-y-2">
+                  <span className="text-[11px] font-mono font-extrabold uppercase tracking-wider text-[#0B63E5] block px-1">
+                    Linhas Diretas de Atendimento
+                  </span>
+                  <div className="space-y-2">
+                    {phoneItems.map((item) => {
+                      const clean = item.phone.replace(/\D/g, '');
+                      return (
+                        <div key={item.phone} className="flex items-center justify-between py-2 px-3 rounded-xl bg-white/5 border border-white/10">
+                          <div className="text-left">
+                            <span className="text-[10px] uppercase font-mono text-slate-400 font-bold block">{item.dept}</span>
+                            <span className="text-xs font-mono font-bold text-white">{item.phone}</span>
+                          </div>
+                          <div className="flex items-center space-x-1.5">
+                            <a
+                              href={`tel:${item.phone.replace(/\s+/g, '')}`}
+                              className="p-1.5 rounded-lg bg-white/10 text-white hover:text-[#0B63E5] transition-colors"
+                              title={`Ligar para ${item.dept}`}
+                            >
+                              <Phone className="w-3.5 h-3.5" />
+                            </a>
+                            <a
+                              href={`https://wa.me/${clean}?text=Ol%C3%A1%20GPA%20Angola%2C%20gostaria%20de%20falar%20com%20o%20departamento%20de%20${encodeURIComponent(item.dept)}.`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 rounded-lg bg-[#25D366]/20 border border-[#25D366]/40 text-[#25D366] hover:bg-[#25D366] hover:text-white transition-colors"
+                              title={`WhatsApp ${item.dept}`}
+                            >
+                              <MessageSquare className="w-3.5 h-3.5" />
+                            </a>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-4 pt-6 border-t border-white/10">
+              <div className="space-y-4 pt-4 border-t border-white/10">
                 <button 
                   onClick={() => {
                     setIsMobileMenuOpen(false);
                     onOpenQuoteCalculator();
                   }}
-                  className="w-full bg-[#075b2d] hover:bg-[#09ac53] text-white font-akrobat text-xl uppercase font-black py-3 rounded shadow-lg transition-all flex items-center justify-center gap-2"
+                  className="w-full bg-[#0052CC] hover:bg-[#0B63E5] text-white font-akrobat text-xl uppercase font-black py-3 rounded shadow-lg transition-all flex items-center justify-center gap-2"
                 >
                   <Calculator className="w-5 h-5" />
                   <span>Pedir Orçamento</span>

@@ -43,6 +43,7 @@ export interface AdminUser {
   silenceExpiresAt?: string | null;
   whatsappNumber?: string;
   isOnline?: boolean;
+  updatedAt?: string;
 }
 
 export interface StoreCategory {

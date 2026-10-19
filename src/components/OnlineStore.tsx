@@ -474,7 +474,7 @@ export default function OnlineStore({ siteConfig, onOpenQuoteWithDetails, storeP
                       <td className="px-6 py-4.5">
                         <div className="flex items-center space-x-3">
                           <img
-                            src={siteConfig?.productImages?.[p.name] || PRODUCT_IMAGES[p.name] || 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80'}
+                            src={p.imageUrl || siteConfig?.productImages?.[p.name] || 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80'}
                             alt={p.name}
                             className="w-12 h-12 object-cover rounded-xl border border-slate-100/80 flex-shrink-0"
                             referrerPolicy="no-referrer"
